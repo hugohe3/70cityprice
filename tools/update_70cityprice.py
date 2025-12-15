@@ -400,9 +400,10 @@ def main():
     
     url = sys.argv[1]
     
-    # 获取脚本所在目录
+    # 获取仓库根目录（脚本所在目录的上级）
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(script_dir, '70cityprice.csv')
+    repo_root = os.path.dirname(script_dir)
+    csv_path = os.path.join(repo_root, '70cityprice.csv')
     
     if not os.path.exists(csv_path):
         print(f"错误: CSV文件不存在: {csv_path}")

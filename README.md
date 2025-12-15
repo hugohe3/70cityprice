@@ -4,32 +4,43 @@
 
 本项目用于自动化采集和管理中国国家统计局发布的70个大中城市商品住宅销售价格变动数据。
 
-## 📁 文件结构
+## 📁 目录结构
 
-| 文件 | 说明 |
-|------|------|
-| `70cityprice.csv` | 主数据文件，包含2006年至今的完整历史数据（当前更新至2025年11月） |
-| `update_70cityprice.py` | **自动更新脚本** - 从国家统计局网址抓取新数据并追加到CSV |
-| `extract_70cityprice.py` | **数据提取脚本** - 按指定月份范围提取数据到新文件 |
-| `README.md` | 项目说明文档 |
+```
+70cityprice/
+├── 70cityprice.csv         # 主数据文件（2006年至今，当前更新至2025年11月）
+├── README.md               # 项目说明文档
+├── tools/                  # 工具脚本目录
+│   ├── extract_70cityprice.py   # 数据提取脚本
+│   └── update_70cityprice.py    # 数据更新脚本
+└── projects/               # 生成的数据文件（Git忽略，不上传）
+    └── ...
+```
+
+| 文件/目录 | 说明 |
+|-----------|------|
+| `70cityprice.csv` | 主数据文件，包含2006年至今的完整历史数据 |
+| `tools/update_70cityprice.py` | **自动更新脚本** - 从国家统计局网址抓取新数据并追加到CSV |
+| `tools/extract_70cityprice.py` | **数据提取脚本** - 按月份/城市提取数据到新文件 |
+| `projects/` | 本地生成的数据文件目录（Git忽略） |
 
 ## 🚀 快速使用
 
-### 更新数据（推荐方式）
+### 更新数据
 
 每月国家统计局发布新数据后，只需运行：
 
 ```bash
-python update_70cityprice.py "国家统计局发布页面的URL"
+python tools/update_70cityprice.py "国家统计局发布页面的URL"
 ```
 
 **示例：**
 ```bash
 # 更新6月份数据（7月发布）
-python update_70cityprice.py "https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html"
+python tools/update_70cityprice.py "https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html"
 
 # 更新1月份数据（2月发布）- 脚本会自动处理没有年度平均的情况
-python update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502/t20250219_1958761.html"
+python tools/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502/t20250219_1958761.html"
 ```
 
 脚本会自动：
@@ -40,32 +51,75 @@ python update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502
 5. **1月份特殊处理**：由于1月份没有"年度平均"列，脚本会自动使用同比数据作为定基比
 6. 追加到现有CSV文件中（如果该月数据已存在则替换）
 
-### 提取指定月份数据
+### 提取数据
 
-如需提取特定时间范围的数据，可使用：
+#### 按月份提取
 
 ```bash
-python extract_70cityprice.py <起始月份> <结束月份> [输出文件名]
+python tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名]
 ```
 
 **示例：**
 ```bash
-# 提取2025年7月至11月的数据（自动命名）
-python extract_70cityprice.py 202507 202511
-# 输出: 70cityprice_202507_202511.csv
+# 提取2025年7月至11月的数据（自动保存到 projects/ 目录）
+python tools/extract_70cityprice.py month 202507 202511
 
 # 指定输出文件名
-python extract_70cityprice.py 202507 202511 my_data.csv
+python tools/extract_70cityprice.py month 202507 202511 my_data.csv
 
 # 支持多种日期格式
-python extract_70cityprice.py 2024-01 2024-12
-python extract_70cityprice.py 2025/07 2025/11
+python tools/extract_70cityprice.py month 2024-01 2024-12
 ```
 
-**支持的日期格式：**
-- `YYYYMM` (如 `202507`)
-- `YYYY-MM` (如 `2025-07`)
-- `YYYY/MM` (如 `2025/07`)
+#### 按城市提取
+
+```bash
+python tools/extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名]
+```
+
+**示例：**
+```bash
+# 提取单个城市的全部历史数据
+python tools/extract_70cityprice.py city 成都市
+
+# 提取多个城市
+python tools/extract_70cityprice.py city 北京市 上海市 广州市 深圳市
+
+# 指定输出文件名
+python tools/extract_70cityprice.py city 成都市 --output chengdu.csv
+```
+
+#### 组合过滤（城市+月份）
+
+```bash
+python tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份>
+```
+
+**示例：**
+```bash
+# 提取成都和重庆2024年全年数据
+python tools/extract_70cityprice.py filter --cities 成都市 重庆市 --start 202401 --end 202412
+```
+
+#### 辅助命令
+
+```bash
+# 列出所有可用城市
+python tools/extract_70cityprice.py list-cities
+
+# 列出数据日期范围
+python tools/extract_70cityprice.py list-dates
+```
+
+### 输出文件位置
+
+| 情况 | 输出位置 |
+|------|----------|
+| 不指定 `--output` | 自动保存到 `projects/` 目录 |
+| 指定文件名 `--output my.csv` | 保存到 `projects/my.csv` |
+| 指定路径 `--output data/my.csv` | 保存到指定路径 |
+
+> 💡 `projects/` 目录已在 `.gitignore` 中配置忽略，生成的数据文件不会上传到 GitHub。
 
 ### ⚠️ 1月份数据说明
 
@@ -136,6 +190,8 @@ python extract_70cityprice.py 2025/07 2025/11
 
 ## 📝 更新日志
 
+- **2025-12-15**: 重构项目结构，工具脚本移至 `tools/` 目录，新增 `projects/` 目录存放生成数据
+- **2025-12-15**: 增强数据提取脚本，支持按城市提取、组合过滤等功能
 - **2025-12-15**: 新增数据提取脚本 `extract_70cityprice.py`，支持按月份范围导出数据
 - **2025-12-15**: 创建自动化更新脚本 `update_70cityprice.py`，精简仓库结构
 - 数据已更新至 **2025年11月**
