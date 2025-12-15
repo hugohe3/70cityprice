@@ -8,11 +8,10 @@
 
 | 文件 | 说明 |
 |------|------|
-| `70cityprice.csv` | 主数据文件，包含2006年至今的完整历史数据 |
+| `70cityprice.csv` | 主数据文件，包含2006年至今的完整历史数据（当前更新至2025年11月） |
 | `update_70cityprice.py` | **自动更新脚本** - 从国家统计局网址抓取新数据并追加到CSV |
-| `70city_month_optimized.py` | 旧版抓取脚本（输出到Excel） |
-| `70city_month_update.py` | 旧版抓取脚本 |
-| `对比历史数据.py` | 数据对比工具 |
+| `extract_70cityprice.py` | **数据提取脚本** - 按指定月份范围提取数据到新文件 |
+| `README.md` | 项目说明文档 |
 
 ## 🚀 快速使用
 
@@ -41,6 +40,33 @@ python update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502
 5. **1月份特殊处理**：由于1月份没有"年度平均"列，脚本会自动使用同比数据作为定基比
 6. 追加到现有CSV文件中（如果该月数据已存在则替换）
 
+### 提取指定月份数据
+
+如需提取特定时间范围的数据，可使用：
+
+```bash
+python extract_70cityprice.py <起始月份> <结束月份> [输出文件名]
+```
+
+**示例：**
+```bash
+# 提取2025年7月至11月的数据（自动命名）
+python extract_70cityprice.py 202507 202511
+# 输出: 70cityprice_202507_202511.csv
+
+# 指定输出文件名
+python extract_70cityprice.py 202507 202511 my_data.csv
+
+# 支持多种日期格式
+python extract_70cityprice.py 2024-01 2024-12
+python extract_70cityprice.py 2025/07 2025/11
+```
+
+**支持的日期格式：**
+- `YYYYMM` (如 `202507`)
+- `YYYY-MM` (如 `2025-07`)
+- `YYYY/MM` (如 `2025/07`)
+
 ### ⚠️ 1月份数据说明
 
 每年1月份的数据发布时，表格结构与其他月份不同：
@@ -55,7 +81,7 @@ python update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502
 
 | 列名 | 说明 | 示例 |
 |------|------|------|
-| DATE | 数据日期 | 2025/6/1 |
+| DATE | 数据日期 | 2025/10/1 |
 | ADCODE | 城市行政区划代码 | 110100 |
 | CITY | 城市名称 | 北京市 |
 | FixedBase | 指数类型 | 同比/环比/定基比 |
@@ -110,5 +136,6 @@ python update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502
 
 ## 📝 更新日志
 
-- **2025-12-15**: 创建自动化更新脚本 `update_70cityprice.py`
-- 数据已更新至 **2025年6月**
+- **2025-12-15**: 新增数据提取脚本 `extract_70cityprice.py`，支持按月份范围导出数据
+- **2025-12-15**: 创建自动化更新脚本 `update_70cityprice.py`，精简仓库结构
+- 数据已更新至 **2025年11月**
