@@ -31,10 +31,10 @@
 
 | DATE | CITY | FixedBase | CommodityHouseIDX | SecondHandIDX |
 |------|------|-----------|-------------------|---------------|
-| 2025/11/1 | 北京市 | 同比 | 97.9 | 93.2 |
-| 2025/11/1 | 上海市 | 同比 | 105.1 | 95.4 |
-| 2025/11/1 | 广州市 | 同比 | 95.7 | 92.8 |
-| 2025/11/1 | 深圳市 | 同比 | 96.3 | 95.2 |
+| 2025/11/1 | 北京 | 同比 | 97.9 | 93.2 |
+| 2025/11/1 | 上海 | 同比 | 105.1 | 95.4 |
+| 2025/11/1 | 广州 | 同比 | 95.7 | 92.8 |
+| 2025/11/1 | 深圳 | 同比 | 96.3 | 95.2 |
 
 </details>
 
@@ -46,12 +46,13 @@
 70cityprice/
 ├── 70cityprice.csv         # 主数据文件（2006年至今，当前更新至2025年11月）
 ├── README.md               # 项目说明文档
-├── LICENSE                 # CC BY 4.0 许可证
+├── LICENSE                 # MIT 许可证
 ├── assets/                 # 资源文件
 │   └── price_trend.png     # 数据可视化图表
 ├── tools/                  # 工具脚本目录
 │   ├── extract_70cityprice.py   # 数据提取脚本
 │   ├── update_70cityprice.py    # 数据更新脚本
+│   ├── validate_70cityprice.py  # 数据质量校验脚本
 │   └── generate_chart.py        # 图表生成脚本
 └── projects/               # 生成的数据文件（Git忽略，不上传）
 ```
@@ -61,6 +62,7 @@
 | `70cityprice.csv` | 主数据文件，包含2006年至今的完整历史数据 |
 | `tools/update_70cityprice.py` | **自动更新脚本** - 从国家统计局网址抓取新数据并追加到CSV |
 | `tools/extract_70cityprice.py` | **数据提取脚本** - 按月份/城市提取数据到新文件 |
+| `tools/validate_70cityprice.py` | **数据校验脚本** - 检查结构、主键、月份连续性和70城覆盖 |
 | `projects/` | 本地生成的数据文件目录（Git忽略） |
 
 ## 🚀 快速使用
@@ -119,13 +121,13 @@ python tools/extract_70cityprice.py city <城市名1> [城市名2] ... [--output
 **示例：**
 ```bash
 # 提取单个城市的全部历史数据
-python tools/extract_70cityprice.py city 成都市
+python tools/extract_70cityprice.py city 成都
 
 # 提取多个城市
-python tools/extract_70cityprice.py city 北京市 上海市 广州市 深圳市
+python tools/extract_70cityprice.py city 北京 上海 广州 深圳
 
 # 指定输出文件名
-python tools/extract_70cityprice.py city 成都市 --output chengdu.csv
+python tools/extract_70cityprice.py city 成都 --output chengdu.csv
 ```
 
 #### 组合过滤（城市+月份）
@@ -137,7 +139,7 @@ python tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --st
 **示例：**
 ```bash
 # 提取成都和重庆2024年全年数据
-python tools/extract_70cityprice.py filter --cities 成都市 重庆市 --start 202401 --end 202412
+python tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
 ```
 
 #### 辅助命令
@@ -148,6 +150,9 @@ python tools/extract_70cityprice.py list-cities
 
 # 列出数据日期范围
 python tools/extract_70cityprice.py list-dates
+
+# 校验主数据质量（建议更新后执行）
+python tools/validate_70cityprice.py
 ```
 
 ### 输出文件位置
@@ -168,6 +173,13 @@ python tools/extract_70cityprice.py list-dates
 
 脚本会自动检测这种情况，并将 **同比数据复制到定基比** 字段中。
 
+### 🏷️ 城市命名口径说明
+
+- **主数据存储口径**：`CITY` 列统一采用国家统计局当前发布写法（无“市”后缀），例如 `北京`、`成都`、`大理`。
+- **更新脚本写入口径**：`tools/update_70cityprice.py` 在抓取后会自动标准化城市名，写回CSV时保持上述统一口径。
+- **提取脚本输入兼容**：`tools/extract_70cityprice.py` 同时兼容 `北京/北京市`、`成都/成都市`、`大理/大理市/大理白族自治州` 等常见写法。
+- **历史兼容建议**：若你有旧版导出文件（带“市”后缀或“自治州”写法），建议先运行 `python tools/validate_70cityprice.py` 检查口径一致性。
+
 ## 📋 数据结构
 
 ### CSV文件列说明
@@ -176,7 +188,7 @@ python tools/extract_70cityprice.py list-dates
 |------|------|------|
 | DATE | 数据日期 | 2025/10/1 |
 | ADCODE | 城市行政区划代码 | 110100 |
-| CITY | 城市名称 | 北京市 |
+| CITY | 城市名称（国家统计局当前写法） | 北京 |
 | FixedBase | 指数类型 | 同比/环比/定基比 |
 | HouseIDX | 住宅价格指数（早期数据） | |
 | ResidentIDX | 住宅价格指数（早期数据） | |

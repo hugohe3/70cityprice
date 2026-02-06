@@ -3,7 +3,6 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 from pathlib import Path
 
 # 设置中文字体
@@ -20,7 +19,7 @@ def main():
     df['DATE'] = pd.to_datetime(df['DATE'])
     
     # 筛选条件：2015年至今，北上广深，同比数据
-    cities = ['北京市', '上海市', '广州市', '深圳市']
+    cities = ['北京', '上海', '广州', '深圳']
     start_date = '2015-01-01'
     
     mask = (
@@ -34,16 +33,16 @@ def main():
     fig, ax = plt.subplots(figsize=(12, 6), dpi=150)
     
     colors = {
-        '北京市': '#E53935',
-        '上海市': '#1E88E5', 
-        '广州市': '#43A047',
-        '深圳市': '#FB8C00'
+        '北京': '#E53935',
+        '上海': '#1E88E5',
+        '广州': '#43A047',
+        '深圳': '#FB8C00'
     }
     
     for city in cities:
         city_data = data[data['CITY'] == city].sort_values('DATE')
         ax.plot(city_data['DATE'], city_data['CommodityHouseIDX'], 
-                label=city.replace('市', ''), color=colors[city], linewidth=1.5)
+                label=city, color=colors[city], linewidth=1.5)
     
     # 添加基准线（100 = 与上年同期持平）
     ax.axhline(y=100, color='gray', linestyle='--', alpha=0.5, linewidth=1)

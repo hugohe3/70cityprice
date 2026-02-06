@@ -143,11 +143,38 @@ def extract_by_city(df, cities):
     按城市提取数据
     """
     print(f"提取城市: {', '.join(cities)}")
-    
-    # 不区分大小写匹配
-    cities_lower = [c.lower().strip() for c in cities]
-    mask = df['CITY'].str.lower().str.strip().isin(cities_lower)
-    return df[mask].copy()
+
+    def normalize_city_exact(name):
+        """城市名精确归一化：仅清理空白和大小写"""
+        if pd.isna(name):
+            return ''
+        return str(name).lower().replace(' ', '').replace('\u3000', '').strip()
+
+    def normalize_city_fuzzy(name):
+        """城市名宽松归一化：额外忽略常见行政后缀"""
+        normalized = normalize_city_exact(name)
+        for suffix in ['自治州', '地区', '盟', '市']:
+            if normalized.endswith(suffix):
+                normalized = normalized[:-len(suffix)]
+                break
+        return normalized
+
+    # 先做精确匹配（避免宽松匹配造成误匹配）
+    requested_exact = {normalize_city_exact(city) for city in cities}
+    city_exact = df['CITY'].apply(normalize_city_exact)
+    exact_mask = city_exact.isin(requested_exact)
+    exact_result = df[exact_mask].copy()
+    if len(exact_result) > 0:
+        return exact_result
+
+    # 精确匹配不到时，回退到宽松匹配（支持“北京”匹配“北京市”）
+    requested_fuzzy = {normalize_city_fuzzy(city) for city in cities}
+    city_fuzzy = df['CITY'].apply(normalize_city_fuzzy)
+    fuzzy_mask = city_fuzzy.isin(requested_fuzzy)
+    fuzzy_result = df[fuzzy_mask].copy()
+    if len(fuzzy_result) > 0:
+        print("提示: 未找到精确匹配，已使用宽松匹配（忽略“市/自治州/地区/盟”后缀）")
+    return fuzzy_result
 
 
 def print_extraction_stats(df, extracted_df):

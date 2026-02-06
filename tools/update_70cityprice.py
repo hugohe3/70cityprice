@@ -39,11 +39,24 @@ CITY_ADCODE = {
     '南充': '511300', '遵义': '520300', '大理': '532900'
 }
 
+# 城市名称别名（用于统一解析）
+CITY_NAME_ALIASES = {
+    '大理白族自治州': '大理',
+    '大理自治州': '大理',
+    '大理市': '大理',
+}
+
+# 标准输出城市名（用于写入CSV）
+CITY_STANDARD_NAME = {city: city for city in CITY_ADCODE}
+
 # 城市名称标准化映射（处理空格等变体）
 def normalize_city_name(name):
     """标准化城市名称"""
     # 移除所有空格
     name = name.replace(' ', '').replace('\u3000', '')  # 全角和半角空格
+    # 处理已知别名
+    if name in CITY_NAME_ALIASES:
+        return CITY_NAME_ALIASES[name]
     # 移除"市"后缀
     if name.endswith('市'):
         name = name[:-1]
@@ -60,6 +73,27 @@ def get_city_adcode(city_name):
             return CITY_ADCODE[key]
     print(f"警告: 未找到城市 '{city_name}' 的ADCODE")
     return None
+
+def get_standard_city_name(city_name, warn_if_missing=False):
+    """获取标准输出城市名"""
+    normalized = normalize_city_name(city_name)
+    if normalized in CITY_STANDARD_NAME:
+        return CITY_STANDARD_NAME[normalized]
+    for key in CITY_STANDARD_NAME:
+        if normalized in key or key in normalized:
+            return CITY_STANDARD_NAME[key]
+    if warn_if_missing:
+        print(f"警告: 未找到城市 '{city_name}' 的标准名称")
+    return None
+
+def standardize_city_column(city_name):
+    """标准化CITY列值，未命中时保留原值"""
+    if pd.isna(city_name):
+        return city_name
+    standard_name = get_standard_city_name(str(city_name), warn_if_missing=False)
+    if standard_name:
+        return standard_name
+    return str(city_name).strip()
 
 def parse_date_from_url(url):
     """从URL中解析日期"""
@@ -290,7 +324,7 @@ def create_records(date_str, commodity_main, secondhand_main, commodity_size, se
         if not adcode:
             continue
         
-        city_name = city + '市'
+        city_name = get_standard_city_name(city, warn_if_missing=False) or city
         
         # 为每种指数类型创建记录
         for idx_type in ['同比', '环比', '定基比']:
@@ -356,10 +390,13 @@ def update_csv(csv_path, new_records):
     """更新CSV文件"""
     # 读取现有CSV
     existing_df = pd.read_csv(csv_path, dtype=str)
+    existing_df['CITY'] = existing_df['CITY'].apply(standardize_city_column)
     print(f"现有数据: {len(existing_df)} 条记录")
     
     # 创建新数据DataFrame
     new_df = pd.DataFrame(new_records)
+    if 'CITY' in new_df.columns:
+        new_df['CITY'] = new_df['CITY'].apply(standardize_city_column)
     
     # 获取新数据的日期
     if len(new_records) > 0:
