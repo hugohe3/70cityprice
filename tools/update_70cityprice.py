@@ -7,7 +7,7 @@
     python update_70cityprice.py <URL>
     
 例如:
-    python update_70cityprice.py "https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html"
+    python update_70cityprice.py "https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html"
 """
 
 import pandas as pd
@@ -432,7 +432,7 @@ def update_csv(csv_path, new_records):
 def main():
     if len(sys.argv) < 2:
         print("使用方法: python update_70cityprice.py <URL>")
-        print("例如: python update_70cityprice.py 'https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html'")
+        print("例如: python update_70cityprice.py 'https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html'")
         sys.exit(1)
     
     url = sys.argv[1]

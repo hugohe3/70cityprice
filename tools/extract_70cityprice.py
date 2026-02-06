@@ -5,13 +5,13 @@
 
 使用方法:
     # 按月份提取
-    python extract_70cityprice.py month <起始月份> <结束月份> [输出文件名]
+    python extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
     
     # 按城市提取
-    python extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名]
+    python extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
     
     # 组合提取（指定城市+月份范围）
-    python extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--output 输出文件名]
+    python extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--output 输出文件名] [--fixedbase 指数类型]
     
     # 列出所有可用城市
     python extract_70cityprice.py list-cities
@@ -22,13 +22,15 @@
 示例:
     python extract_70cityprice.py month 202507 202511
     python extract_70cityprice.py month 202507 202511 output.csv
+    python extract_70cityprice.py month 202507 202511 --fixedbase 环比
     python extract_70cityprice.py city 北京 上海 广州 深圳
     python extract_70cityprice.py city 成都 --output chengdu_data.csv
-    python extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
+    python extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412 --fixedbase 同比,环比
     python extract_70cityprice.py list-cities
     python extract_70cityprice.py list-dates
 
 日期格式: YYYYMM (例如: 202507 表示2025年7月)
+指数类型: 同比 / 环比 / 定基比（支持逗号分隔多个）
 """
 
 import pandas as pd
@@ -36,6 +38,13 @@ import os
 import sys
 import argparse
 from datetime import datetime
+
+ALLOWED_FIXED_BASES = {'同比', '环比', '定基比'}
+CITY_NAME_ALIASES = {
+    '大理白族自治州': '大理',
+    '大理自治州': '大理',
+    '大理市': '大理',
+}
 
 
 def parse_month_arg(month_str):
@@ -148,7 +157,8 @@ def extract_by_city(df, cities):
         """城市名精确归一化：仅清理空白和大小写"""
         if pd.isna(name):
             return ''
-        return str(name).lower().replace(' ', '').replace('\u3000', '').strip()
+        normalized = str(name).lower().replace(' ', '').replace('\u3000', '').strip()
+        return CITY_NAME_ALIASES.get(normalized, normalized)
 
     def normalize_city_fuzzy(name):
         """城市名宽松归一化：额外忽略常见行政后缀"""
@@ -159,22 +169,53 @@ def extract_by_city(df, cities):
                 break
         return normalized
 
-    # 先做精确匹配（避免宽松匹配造成误匹配）
+    # 先做精确匹配
     requested_exact = {normalize_city_exact(city) for city in cities}
     city_exact = df['CITY'].apply(normalize_city_exact)
     exact_mask = city_exact.isin(requested_exact)
-    exact_result = df[exact_mask].copy()
-    if len(exact_result) > 0:
-        return exact_result
 
-    # 精确匹配不到时，回退到宽松匹配（支持“北京”匹配“北京市”）
+    # 再做宽松匹配（兼容“北京市”这类后缀写法）
     requested_fuzzy = {normalize_city_fuzzy(city) for city in cities}
     city_fuzzy = df['CITY'].apply(normalize_city_fuzzy)
     fuzzy_mask = city_fuzzy.isin(requested_fuzzy)
-    fuzzy_result = df[fuzzy_mask].copy()
-    if len(fuzzy_result) > 0:
-        print("提示: 未找到精确匹配，已使用宽松匹配（忽略“市/自治州/地区/盟”后缀）")
-    return fuzzy_result
+    used_fuzzy_fallback = bool((~exact_mask & fuzzy_mask).any())
+    if used_fuzzy_fallback:
+        print("提示: 已启用宽松匹配（忽略“市/自治州/地区/盟”等后缀）补充结果")
+
+    combined_mask = exact_mask | fuzzy_mask
+    return df[combined_mask].copy()
+
+
+def parse_fixedbase_arg(fixedbase_arg):
+    """
+    解析指数类型参数
+    支持格式:
+      - 单个值: 环比
+      - 逗号分隔: 同比,环比
+    返回: set[str]
+    """
+    if not fixedbase_arg:
+        return None
+    parts = [p.strip() for p in str(fixedbase_arg).split(',') if p.strip()]
+    if not parts:
+        return None
+    invalid = sorted(set(parts) - ALLOWED_FIXED_BASES)
+    if invalid:
+        raise ValueError(
+            f"无效的指数类型: {', '.join(invalid)}，可选值为: {', '.join(sorted(ALLOWED_FIXED_BASES))}"
+        )
+    return set(parts)
+
+
+def extract_by_fixedbase(df, fixedbases):
+    """
+    按指数类型提取数据
+    """
+    if not fixedbases:
+        return df
+    print(f"提取指数类型: {', '.join(sorted(fixedbases))}")
+    mask = df['FixedBase'].astype(str).str.strip().isin(fixedbases)
+    return df[mask].copy()
 
 
 def print_extraction_stats(df, extracted_df):
@@ -209,8 +250,15 @@ def cmd_month(args):
         print("错误: 起始月份不能晚于结束月份")
         sys.exit(1)
     
+    try:
+        fixedbases = parse_fixedbase_arg(args.fixedbase)
+    except ValueError as e:
+        print(f"错误: {e}")
+        sys.exit(1)
+
     df = load_data()
     extracted_df = extract_by_month(df, start_year, start_month, end_year, end_month)
+    extracted_df = extract_by_fixedbase(extracted_df, fixedbases)
     print_extraction_stats(df, extracted_df)
     
     if len(extracted_df) > 0:
@@ -230,9 +278,16 @@ def cmd_city(args):
     if not args.cities:
         print("错误: 请指定至少一个城市")
         sys.exit(1)
-    
+
+    try:
+        fixedbases = parse_fixedbase_arg(args.fixedbase)
+    except ValueError as e:
+        print(f"错误: {e}")
+        sys.exit(1)
+
     df = load_data()
     extracted_df = extract_by_city(df, args.cities)
+    extracted_df = extract_by_fixedbase(extracted_df, fixedbases)
     print_extraction_stats(df, extracted_df)
     
     if len(extracted_df) > 0:
@@ -263,6 +318,12 @@ def cmd_filter(args):
     """组合过滤提取命令"""
     df = load_data()
     extracted_df = df.copy()
+
+    try:
+        fixedbases = parse_fixedbase_arg(args.fixedbase)
+    except ValueError as e:
+        print(f"错误: {e}")
+        sys.exit(1)
     
     # 按城市过滤
     if args.cities:
@@ -282,6 +343,9 @@ def cmd_filter(args):
             sys.exit(1)
         
         extracted_df = extract_by_month(extracted_df, start_year, start_month, end_year, end_month)
+
+    # 按指数类型过滤
+    extracted_df = extract_by_fixedbase(extracted_df, fixedbases)
     
     print_extraction_stats(df, extracted_df)
     
@@ -352,9 +416,10 @@ def main():
 示例:
   %(prog)s month 202507 202511                    # 按月份提取
   %(prog)s month 202507 202511 output.csv         # 指定输出文件名
+  %(prog)s month 202507 202511 --fixedbase 环比   # 只提取环比
   %(prog)s city 北京 上海 广州 深圳               # 按城市提取
   %(prog)s city 成都 --output chengdu.csv         # 按城市提取并指定输出
-  %(prog)s filter --cities 成都 重庆 --start 202401 --end 202412  # 组合过滤
+  %(prog)s filter --cities 成都 重庆 --start 202401 --end 202412 --fixedbase 同比,环比  # 组合过滤
   %(prog)s list-cities                            # 列出所有城市
   %(prog)s list-dates                             # 列出日期范围
         """
@@ -367,12 +432,14 @@ def main():
     month_parser.add_argument('start', help='起始月份 (格式: YYYYMM)')
     month_parser.add_argument('end', help='结束月份 (格式: YYYYMM)')
     month_parser.add_argument('output', nargs='?', help='输出文件名 (可选)')
+    month_parser.add_argument('--fixedbase', '-f', help='指数类型过滤 (同比/环比/定基比，支持逗号分隔多个)')
     month_parser.set_defaults(func=cmd_month)
     
     # city 子命令
     city_parser = subparsers.add_parser('city', help='按城市提取数据')
     city_parser.add_argument('cities', nargs='+', help='城市名称列表')
     city_parser.add_argument('--output', '-o', help='输出文件名')
+    city_parser.add_argument('--fixedbase', '-f', help='指数类型过滤 (同比/环比/定基比，支持逗号分隔多个)')
     city_parser.set_defaults(func=cmd_city)
     
     # filter 子命令
@@ -381,6 +448,7 @@ def main():
     filter_parser.add_argument('--start', '-s', help='起始月份 (格式: YYYYMM)')
     filter_parser.add_argument('--end', '-e', help='结束月份 (格式: YYYYMM)')
     filter_parser.add_argument('--output', '-o', help='输出文件名')
+    filter_parser.add_argument('--fixedbase', '-f', help='指数类型过滤 (同比/环比/定基比，支持逗号分隔多个)')
     filter_parser.set_defaults(func=cmd_filter)
     
     # list-cities 子命令

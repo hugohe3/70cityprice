@@ -1,6 +1,6 @@
 # 70城房价数据 | China 70-City House Price Index
 
-[![数据更新](https://img.shields.io/badge/数据更新至-2025年11月-blue)]()
+[![数据更新](https://img.shields.io/badge/数据更新至-2025年12月-blue)]()
 [![城市数量](https://img.shields.io/badge/城市-70个大中城市-green)]()
 [![时间跨度](https://img.shields.io/badge/时间跨度-2006至今-orange)]()
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
@@ -31,10 +31,10 @@
 
 | DATE | CITY | FixedBase | CommodityHouseIDX | SecondHandIDX |
 |------|------|-----------|-------------------|---------------|
-| 2025/11/1 | 北京 | 同比 | 97.9 | 93.2 |
-| 2025/11/1 | 上海 | 同比 | 105.1 | 95.4 |
-| 2025/11/1 | 广州 | 同比 | 95.7 | 92.8 |
-| 2025/11/1 | 深圳 | 同比 | 96.3 | 95.2 |
+| 2025/12/1 | 北京 | 同比 | 97.6 | 91.5 |
+| 2025/12/1 | 上海 | 同比 | 104.8 | 93.9 |
+| 2025/12/1 | 广州 | 同比 | 95.2 | 92.2 |
+| 2025/12/1 | 深圳 | 同比 | 95.6 | 94.6 |
 
 </details>
 
@@ -44,7 +44,7 @@
 
 ```
 70cityprice/
-├── 70cityprice.csv         # 主数据文件（2006年至今，当前更新至2025年11月）
+├── 70cityprice.csv         # 主数据文件（2006年至今，当前更新至2025年12月）
 ├── README.md               # 项目说明文档
 ├── LICENSE                 # MIT 许可证
 ├── assets/                 # 资源文件
@@ -97,7 +97,7 @@ python tools/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/
 #### 按月份提取
 
 ```bash
-python tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名]
+python tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
 ```
 
 **示例：**
@@ -110,12 +110,15 @@ python tools/extract_70cityprice.py month 202507 202511 my_data.csv
 
 # 支持多种日期格式
 python tools/extract_70cityprice.py month 2024-01 2024-12
+
+# 仅提取环比
+python tools/extract_70cityprice.py month 202401 202412 --fixedbase 环比
 ```
 
 #### 按城市提取
 
 ```bash
-python tools/extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名]
+python tools/extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
 ```
 
 **示例：**
@@ -128,18 +131,24 @@ python tools/extract_70cityprice.py city 北京 上海 广州 深圳
 
 # 指定输出文件名
 python tools/extract_70cityprice.py city 成都 --output chengdu.csv
+
+# 提取城市的同比+环比
+python tools/extract_70cityprice.py city 成都 --fixedbase 同比,环比
 ```
 
 #### 组合过滤（城市+月份）
 
 ```bash
-python tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份>
+python tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--fixedbase 指数类型]
 ```
 
 **示例：**
 ```bash
 # 提取成都和重庆2024年全年数据
 python tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
+
+# 提取重庆最近三年的环比
+python tools/extract_70cityprice.py filter --cities 重庆 --start 202301 --end 202512 --fixedbase 环比
 ```
 
 #### 辅助命令
@@ -352,12 +361,3 @@ python tools/validate_70cityprice.py
 数据来源：国家统计局《70个大中城市商品住宅销售价格变动情况》
 数据整理：70城房价数据项目 https://github.com/[your-username]/70cityprice
 ```
-
-## 📝 更新日志
-
-- **2025-12-15**: 添加数据可视化图表、优化README结构、添加MIT许可证与数据来源声明
-- **2025-12-15**: 重构项目结构，工具脚本移至 `tools/` 目录，新增 `projects/` 目录存放生成数据
-- **2025-12-15**: 增强数据提取脚本，支持按城市提取、组合过滤等功能
-- **2025-12-15**: 新增数据提取脚本 `extract_70cityprice.py`，支持按月份范围导出数据
-- **2025-12-15**: 创建自动化更新脚本 `update_70cityprice.py`，精简仓库结构
-- 数据已更新至 **2025年11月**
