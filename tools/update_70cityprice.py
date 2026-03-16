@@ -389,7 +389,7 @@ def create_records(date_str, commodity_main, secondhand_main, commodity_size, se
 def update_csv(csv_path, new_records):
     """更新CSV文件"""
     # 读取现有CSV
-    existing_df = pd.read_csv(csv_path, dtype=str)
+    existing_df = pd.read_csv(csv_path, dtype=str, encoding='utf-8-sig')
     existing_df['CITY'] = existing_df['CITY'].apply(standardize_city_column)
     print(f"现有数据: {len(existing_df)} 条记录")
     
@@ -425,7 +425,7 @@ def update_csv(csv_path, new_records):
     combined_df = combined_df.drop('DATE_SORT', axis=1)
     
     # 保存（使用引号包裹所有字段，与原始格式一致）
-    combined_df.to_csv(csv_path, index=False, quoting=1)  # quoting=1 是 csv.QUOTE_ALL
+    combined_df.to_csv(csv_path, index=False, quoting=1, encoding='utf-8-sig')  # quoting=1 是 csv.QUOTE_ALL
     print(f"更新后数据: {len(combined_df)} 条记录")
     print(f"新增 {len(new_records)} 条记录")
 
