@@ -8,30 +8,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 常用命令
 
-跨平台统一用 `python`（Windows 原生即如此；macOS/Ubuntu 若没有该命令，按 [README](README.md) 一次性 `sudo apt install python-is-python3` 或自行加 alias 即可）。依赖见 [requirements.txt](requirements.txt)：`pandas`、`matplotlib`、`lxml`。
+统一使用 `python3` / `pip3`（Linux/macOS 主流默认提供；Windows 用户若仅有 `python.exe` 可自行替换为 `python`）。依赖见 [requirements.txt](requirements.txt)：`pandas`、`matplotlib`、`lxml`。
 
 ```bash
 # 安装依赖（Ubuntu 24+ 若拒绝可加 --break-system-packages，或用 venv）
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # 抓取并追加最新月份数据（URL 取自国家统计局发布页）
-python tools/update_70cityprice.py "<国家统计局发布页URL>"
+python3 tools/update_70cityprice.py "<国家统计局发布页URL>"
 
 # 校验主 CSV 的结构、主键、月份连续性与 70 城覆盖（每次 update 后必跑）
-python tools/validate_70cityprice.py
+python3 tools/validate_70cityprice.py
 
 # 按月份 / 城市 / 组合条件提取子集，默认输出到 projects/
-python tools/extract_70cityprice.py month 202401 202412
-python tools/extract_70cityprice.py city 北京 上海 广州 深圳
-python tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412 --fixedbase 同比,环比
+python3 tools/extract_70cityprice.py month 202401 202412
+python3 tools/extract_70cityprice.py city 北京 上海 广州 深圳
+python3 tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412 --fixedbase 同比,环比
 
 # 重绘 assets/price_trend.png 走势图
-python tools/generate_chart.py
+python3 tools/generate_chart.py
 ```
 
 仓库没有测试套件、lint 配置或 CI；`validate_70cityprice.py` 就是事实上的"质量回归测试"。`projects/` 目录被 `.gitignore` 忽略，是脚本默认的输出沙箱。
 
-> 本机（Ubuntu 24.04）当前已通过 `.venv/` 装好依赖，未做系统软链接；如直接用系统解释器，相应命令请写成 `.venv/bin/python tools/...`。
+> 本机（Ubuntu 24.04）当前已通过 `.venv/` 装好依赖，未做系统软链接；如直接用系统解释器，相应命令请写成 `.venv/bin/python3 tools/...`。
 
 ## 完成一次月度更新后必须做的事
 

@@ -72,26 +72,26 @@
 需要 Python 3.9+。首次使用先安装依赖：
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
-> **Ubuntu/Debian 用户提示**：若 `python` 命令不存在（默认只装了 `python3`），运行一次 `sudo apt install python-is-python3` 即可让下文所有 `python ...` 命令可用。Windows 与 macOS 一般无需此步。
+> **Windows 用户提示**：若 `python3` 命令不存在（python.org 安装包默认只提供 `python`），可改用 `python tools/...`，或安装 Microsoft Store 版本（自带 `python3` 别名）。Linux/macOS 通常 `python3` 直接可用。
 
 ### 更新数据
 
 每月国家统计局发布新数据后，只需运行：
 
 ```bash
-python tools/update_70cityprice.py "国家统计局发布页面的URL"
+python3 tools/update_70cityprice.py "国家统计局发布页面的URL"
 ```
 
 **示例：**
 ```bash
 # 更新6月份数据（7月发布）
-python tools/update_70cityprice.py "https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html"
+python3 tools/update_70cityprice.py "https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html"
 
 # 更新1月份数据（2月发布）- 脚本会自动处理没有年度平均的情况
-python tools/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502/t20250219_1958761.html"
+python3 tools/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502/t20250219_1958761.html"
 ```
 
 脚本会自动：
@@ -107,71 +107,71 @@ python tools/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/
 #### 按月份提取
 
 ```bash
-python tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
+python3 tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
 ```
 
 **示例：**
 ```bash
 # 提取2025年7月至11月的数据（自动保存到 projects/ 目录）
-python tools/extract_70cityprice.py month 202507 202511
+python3 tools/extract_70cityprice.py month 202507 202511
 
 # 指定输出文件名
-python tools/extract_70cityprice.py month 202507 202511 my_data.csv
+python3 tools/extract_70cityprice.py month 202507 202511 my_data.csv
 
 # 支持多种日期格式
-python tools/extract_70cityprice.py month 2024-01 2024-12
+python3 tools/extract_70cityprice.py month 2024-01 2024-12
 
 # 仅提取环比
-python tools/extract_70cityprice.py month 202401 202412 --fixedbase 环比
+python3 tools/extract_70cityprice.py month 202401 202412 --fixedbase 环比
 ```
 
 #### 按城市提取
 
 ```bash
-python tools/extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
+python3 tools/extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
 ```
 
 **示例：**
 ```bash
 # 提取单个城市的全部历史数据
-python tools/extract_70cityprice.py city 成都
+python3 tools/extract_70cityprice.py city 成都
 
 # 提取多个城市
-python tools/extract_70cityprice.py city 北京 上海 广州 深圳
+python3 tools/extract_70cityprice.py city 北京 上海 广州 深圳
 
 # 指定输出文件名
-python tools/extract_70cityprice.py city 成都 --output chengdu.csv
+python3 tools/extract_70cityprice.py city 成都 --output chengdu.csv
 
 # 提取城市的同比+环比
-python tools/extract_70cityprice.py city 成都 --fixedbase 同比,环比
+python3 tools/extract_70cityprice.py city 成都 --fixedbase 同比,环比
 ```
 
 #### 组合过滤（城市+月份）
 
 ```bash
-python tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--fixedbase 指数类型]
+python3 tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--fixedbase 指数类型]
 ```
 
 **示例：**
 ```bash
 # 提取成都和重庆2024年全年数据
-python tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
+python3 tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
 
 # 提取重庆最近三年的环比
-python tools/extract_70cityprice.py filter --cities 重庆 --start 202301 --end 202512 --fixedbase 环比
+python3 tools/extract_70cityprice.py filter --cities 重庆 --start 202301 --end 202512 --fixedbase 环比
 ```
 
 #### 辅助命令
 
 ```bash
 # 列出所有可用城市
-python tools/extract_70cityprice.py list-cities
+python3 tools/extract_70cityprice.py list-cities
 
 # 列出数据日期范围
-python tools/extract_70cityprice.py list-dates
+python3 tools/extract_70cityprice.py list-dates
 
 # 校验主数据质量（建议更新后执行）
-python tools/validate_70cityprice.py
+python3 tools/validate_70cityprice.py
 ```
 
 ### 输出文件位置
@@ -197,7 +197,7 @@ python tools/validate_70cityprice.py
 - **主数据存储口径**：`CITY` 列统一采用国家统计局当前发布写法（无“市”后缀），例如 `北京`、`成都`、`大理`。
 - **更新脚本写入口径**：`tools/update_70cityprice.py` 在抓取后会自动标准化城市名，写回CSV时保持上述统一口径。
 - **提取脚本输入兼容**：`tools/extract_70cityprice.py` 同时兼容 `北京/北京市`、`成都/成都市`、`大理/大理市/大理白族自治州` 等常见写法。
-- **历史兼容建议**：若你有旧版导出文件（带“市”后缀或“自治州”写法），建议先运行 `python tools/validate_70cityprice.py` 检查口径一致性。
+- **历史兼容建议**：若你有旧版导出文件（带“市”后缀或“自治州”写法），建议先运行 `python3 tools/validate_70cityprice.py` 检查口径一致性。
 
 ## 📋 数据结构
 
