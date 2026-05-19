@@ -67,6 +67,16 @@
 
 ## 🚀 快速使用
 
+### 环境准备
+
+需要 Python 3.9+。首次使用先安装依赖：
+
+```bash
+pip install -r requirements.txt
+```
+
+> **Ubuntu/Debian 用户提示**：若 `python` 命令不存在（默认只装了 `python3`），运行一次 `sudo apt install python-is-python3` 即可让下文所有 `python ...` 命令可用。Windows 与 macOS 一般无需此步。
+
 ### 更新数据
 
 每月国家统计局发布新数据后，只需运行：
