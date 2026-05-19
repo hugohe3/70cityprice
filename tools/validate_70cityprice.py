@@ -5,8 +5,8 @@
 用于校验 70cityprice.csv 的结构完整性与关键数据质量约束
 
 使用方法:
-    python tools/validate_70cityprice.py
-    python tools/validate_70cityprice.py --csv path/to/70cityprice.csv
+    python3 tools/validate_70cityprice.py
+    python3 tools/validate_70cityprice.py --csv path/to/70cityprice.csv
 """
 
 import argparse

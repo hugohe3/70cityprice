@@ -15,7 +15,7 @@ description: 更新70城房价数据 - 从国家统计局网站抓取最新月�
 2. 运行更新脚本
 // turbo
 ```bash
-python tools/update_70cityprice.py "<URL>"
+python3 tools/update_70cityprice.py "<URL>"
 ```
 
 3. 检查更新结果，确认数据已追加到 `70cityprice.csv`
@@ -23,7 +23,7 @@ python tools/update_70cityprice.py "<URL>"
 4. 运行数据校验脚本，确认数据完整性
 // turbo
 ```bash
-python tools/validate_70cityprice.py
+python3 tools/validate_70cityprice.py
 ```
 
 5. 如果一切正常，提示用户是否需要：

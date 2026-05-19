@@ -5,29 +5,29 @@
 
 使用方法:
     # 按月份提取
-    python extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
+    python3 extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
     
     # 按城市提取
-    python extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
+    python3 extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
     
     # 组合提取（指定城市+月份范围）
-    python extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--output 输出文件名] [--fixedbase 指数类型]
+    python3 extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--output 输出文件名] [--fixedbase 指数类型]
     
     # 列出所有可用城市
-    python extract_70cityprice.py list-cities
+    python3 extract_70cityprice.py list-cities
     
     # 列出数据日期范围
-    python extract_70cityprice.py list-dates
+    python3 extract_70cityprice.py list-dates
 
 示例:
-    python extract_70cityprice.py month 202507 202511
-    python extract_70cityprice.py month 202507 202511 output.csv
-    python extract_70cityprice.py month 202507 202511 --fixedbase 环比
-    python extract_70cityprice.py city 北京 上海 广州 深圳
-    python extract_70cityprice.py city 成都 --output chengdu_data.csv
-    python extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412 --fixedbase 同比,环比
-    python extract_70cityprice.py list-cities
-    python extract_70cityprice.py list-dates
+    python3 extract_70cityprice.py month 202507 202511
+    python3 extract_70cityprice.py month 202507 202511 output.csv
+    python3 extract_70cityprice.py month 202507 202511 --fixedbase 环比
+    python3 extract_70cityprice.py city 北京 上海 广州 深圳
+    python3 extract_70cityprice.py city 成都 --output chengdu_data.csv
+    python3 extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412 --fixedbase 同比,环比
+    python3 extract_70cityprice.py list-cities
+    python3 extract_70cityprice.py list-dates
 
 日期格式: YYYYMM (例如: 202507 表示2025年7月)
 指数类型: 同比 / 环比 / 定基比（支持逗号分隔多个）

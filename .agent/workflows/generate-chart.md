@@ -14,7 +14,7 @@ description: 生成北上广深房价趋势图
 2. 运行图表生成脚本
 // turbo
 ```bash
-python tools/generate_chart.py
+python3 tools/generate_chart.py
 ```
 
 3. 确认图表已生成到 `assets/price_trend.png`

@@ -13,7 +13,7 @@ description: 提取70城房价数据（按城市、按月份、组合过滤）
 
 // turbo
 ```bash
-python tools/extract_70cityprice.py <subcommand> ...
+python3 tools/extract_70cityprice.py <subcommand> ...
 ```
 
 支持子命令：
@@ -31,10 +31,10 @@ python tools/extract_70cityprice.py <subcommand> ...
 
 常用示例：
 ```bash
-python tools/extract_70cityprice.py city 成都 --fixedbase 同比
-python tools/extract_70cityprice.py city 成都 --fixedbase 环比
-python tools/extract_70cityprice.py city 成都 --fixedbase 定基比
-python tools/extract_70cityprice.py city 成都 --fixedbase 同比,环比
+python3 tools/extract_70cityprice.py city 成都 --fixedbase 同比
+python3 tools/extract_70cityprice.py city 成都 --fixedbase 环比
+python3 tools/extract_70cityprice.py city 成都 --fixedbase 定基比
+python3 tools/extract_70cityprice.py city 成都 --fixedbase 同比,环比
 ```
 
 ## 常用场景
@@ -42,45 +42,45 @@ python tools/extract_70cityprice.py city 成都 --fixedbase 同比,环比
 ### 1) 按月份提取
 // turbo
 ```bash
-python tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
+python3 tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
 ```
 
 示例：
 ```bash
-python tools/extract_70cityprice.py month 202507 202511
-python tools/extract_70cityprice.py month 2024-01 2024-12 --fixedbase 环比
+python3 tools/extract_70cityprice.py month 202507 202511
+python3 tools/extract_70cityprice.py month 2024-01 2024-12 --fixedbase 环比
 ```
 
 ### 2) 按城市提取
 // turbo
 ```bash
-python tools/extract_70cityprice.py city <城市1> [城市2] ... [--output 输出文件名] [--fixedbase 指数类型]
+python3 tools/extract_70cityprice.py city <城市1> [城市2] ... [--output 输出文件名] [--fixedbase 指数类型]
 ```
 
 示例：
 ```bash
-python tools/extract_70cityprice.py city 成都
-python tools/extract_70cityprice.py city 北京 上海 广州 深圳
-python tools/extract_70cityprice.py city 重庆 --fixedbase 环比
+python3 tools/extract_70cityprice.py city 成都
+python3 tools/extract_70cityprice.py city 北京 上海 广州 深圳
+python3 tools/extract_70cityprice.py city 重庆 --fixedbase 环比
 ```
 
 ### 3) 组合过滤（城市+月份）
 // turbo
 ```bash
-python tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--output 输出文件名] [--fixedbase 指数类型]
+python3 tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--output 输出文件名] [--fixedbase 指数类型]
 ```
 
 示例：
 ```bash
-python tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
-python tools/extract_70cityprice.py filter --cities 重庆 --start 202301 --end 202512 --fixedbase 环比
+python3 tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
+python3 tools/extract_70cityprice.py filter --cities 重庆 --start 202301 --end 202512 --fixedbase 环比
 ```
 
 ## 辅助命令
 // turbo
 ```bash
-python tools/extract_70cityprice.py list-cities
-python tools/extract_70cityprice.py list-dates
+python3 tools/extract_70cityprice.py list-cities
+python3 tools/extract_70cityprice.py list-dates
 ```
 
 ## 输出说明

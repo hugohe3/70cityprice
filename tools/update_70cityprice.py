@@ -4,10 +4,10 @@
 用于将国家统计局发布的70城房价数据追加到现有CSV数据表中
 
 使用方法:
-    python update_70cityprice.py <URL>
-    
+    python3 update_70cityprice.py <URL>
+
 例如:
-    python update_70cityprice.py "https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html"
+    python3 update_70cityprice.py "https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html"
 """
 
 import pandas as pd
@@ -431,8 +431,8 @@ def update_csv(csv_path, new_records):
 
 def main():
     if len(sys.argv) < 2:
-        print("使用方法: python update_70cityprice.py <URL>")
-        print("例如: python update_70cityprice.py 'https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html'")
+        print("使用方法: python3 update_70cityprice.py <URL>")
+        print("例如: python3 update_70cityprice.py 'https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html'")
         sys.exit(1)
     
     url = sys.argv[1]

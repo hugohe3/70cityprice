@@ -75,7 +75,7 @@
 pip3 install -r requirements.txt
 ```
 
-> **Windows 用户提示**：若 `python3` 命令不存在（python.org 安装包默认只提供 `python`），可改用 `python tools/...`，或安装 Microsoft Store 版本（自带 `python3` 别名）。Linux/macOS 通常 `python3` 直接可用。
+> 本仓库所有命令示例统一使用 `python3` / `pip3`。Linux/macOS 默认即可；Windows 用户请使用 Microsoft Store 版本或 WSL，以保证 `python3` 命令可用。
 
 ### 更新数据
 

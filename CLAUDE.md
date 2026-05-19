@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 常用命令
 
-统一使用 `python3` / `pip3`（Linux/macOS 主流默认提供；Windows 用户若仅有 `python.exe` 可自行替换为 `python`）。依赖见 [requirements.txt](requirements.txt)：`pandas`、`matplotlib`、`lxml`。
+本仓库**所有命令一律使用 `python3` / `pip3`**，不要在文档、脚本 docstring 或 print 信息中写裸 `python`（Windows 用户负责自备 `python3` 别名，例如 Microsoft Store 版或 WSL）。依赖见 [requirements.txt](requirements.txt)：`pandas`、`matplotlib`、`lxml`。
 
 ```bash
 # 安装依赖（Ubuntu 24+ 若拒绝可加 --break-system-packages，或用 venv）
