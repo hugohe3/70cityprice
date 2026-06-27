@@ -10,42 +10,24 @@
 """
 
 import argparse
-import os
 import sys
-from typing import List
+from pathlib import Path
+from typing import List, Union
 
 import pandas as pd
 
-from update_70cityprice import CITY_ADCODE, standardize_city_column
+from common import (
+    ALLOWED_FIXED_BASES,
+    CITY_ADCODE,
+    NUMERIC_COLUMNS,
+    REQUIRED_COLUMNS,
+    REQUIRED_FIXED_BASES,
+    get_csv_path,
+    standardize_city_column,
+)
 
-
-REQUIRED_COLUMNS = [
-    'DATE', 'ADCODE', 'CITY', 'FixedBase', 'HouseIDX', 'ResidentIDX',
-    'CommodityHouseIDX', 'SecondHandIDX', 'ResidentBelow90IDX',
-    'CommonResidentBelow90IDX', 'CommodityBelow90IDX', 'Commodity144IDX',
-    'CommodityAbove144IDX', 'SecondHandBelow90IDX', 'SecondHand144IDX',
-    'SecondHandAbove144IDX'
-]
-
-ALLOWED_FIXED_BASE = {'同比', '环比', '定基比'}
-REQUIRED_FIXED_BASE = {'同比', '环比'}
-NUMERIC_COLUMNS = [
-    'HouseIDX', 'ResidentIDX', 'CommodityHouseIDX', 'SecondHandIDX',
-    'ResidentBelow90IDX', 'CommonResidentBelow90IDX', 'CommodityBelow90IDX',
-    'Commodity144IDX', 'CommodityAbove144IDX', 'SecondHandBelow90IDX',
-    'SecondHand144IDX', 'SecondHandAbove144IDX'
-]
 EXPECTED_CITY_COUNT = len(CITY_ADCODE)
 EXPECTED_CITY_NAMES = {standardize_city_column(f'{city}市') for city in CITY_ADCODE}
-
-
-def get_repo_root() -> str:
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.dirname(script_dir)
-
-
-def get_default_csv_path() -> str:
-    return os.path.join(get_repo_root(), '70cityprice.csv')
 
 
 def limit_join(items: List[str], max_items: int = 8) -> str:
@@ -60,11 +42,12 @@ def non_empty_mask(series: pd.Series) -> pd.Series:
     return series.notna() & (series.astype(str).str.strip() != '')
 
 
-def validate_csv(csv_path: str, max_details: int = 8) -> int:
+def validate_csv(csv_path: Union[Path, str], max_details: int = 8) -> int:
     issues: List[str] = []
     warnings: List[str] = []
+    csv_path = Path(csv_path)
 
-    if not os.path.exists(csv_path):
+    if not csv_path.exists():
         print(f'错误: CSV文件不存在: {csv_path}')
         return 1
 
@@ -103,7 +86,7 @@ def validate_csv(csv_path: str, max_details: int = 8) -> int:
 
     # 3) 固定基类型校验
     fixed_base_series = df['FixedBase'].astype(str).str.strip()
-    invalid_fixed_base = sorted((set(fixed_base_series.unique()) - ALLOWED_FIXED_BASE) - {'nan'})
+    invalid_fixed_base = sorted((set(fixed_base_series.unique()) - ALLOWED_FIXED_BASES) - {'nan'})
     if invalid_fixed_base:
         issues.append(f"存在非法FixedBase值: {', '.join(invalid_fixed_base)}")
 
@@ -163,7 +146,7 @@ def validate_csv(csv_path: str, max_details: int = 8) -> int:
         'FixedBase': fixed_base_series
     }).dropna()
     base_sets = base_presence.groupby(['MONTH', 'CITY_STD'])['FixedBase'].agg(set)
-    missing_required = base_sets[~base_sets.apply(lambda s: REQUIRED_FIXED_BASE.issubset(s))]
+    missing_required = base_sets[~base_sets.apply(lambda s: REQUIRED_FIXED_BASES.issubset(s))]
     if len(missing_required) > 0:
         sample_idx = list(missing_required.index[:max_details])
         sample_text = ', '.join([f'{m}|{c}' for m, c in sample_idx])
@@ -214,7 +197,7 @@ def print_report(issues: List[str], warnings: List[str]) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='70城房价数据质量校验工具')
-    parser.add_argument('--csv', default=get_default_csv_path(), help='CSV文件路径')
+    parser.add_argument('--csv', default=get_csv_path(), type=Path, help='CSV文件路径')
     parser.add_argument('--max-details', type=int, default=8, help='每项问题最多展示的细节数量')
     args = parser.parse_args()
 

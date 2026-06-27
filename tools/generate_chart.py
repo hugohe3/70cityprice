@@ -3,7 +3,8 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
-from pathlib import Path
+
+from common import get_csv_path, get_repo_root
 
 # 设置中文字体
 plt.rcParams['font.sans-serif'] = ['PingFang SC', 'Heiti SC', 'SimHei', 'Arial Unicode MS']
@@ -11,9 +12,7 @@ plt.rcParams['axes.unicode_minus'] = False
 
 def main():
     # 读取数据
-    script_dir = Path(__file__).parent
-    csv_path = script_dir.parent / '70cityprice.csv'
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(get_csv_path())
     
     # 转换日期
     df['DATE'] = pd.to_datetime(df['DATE'])
@@ -28,6 +27,10 @@ def main():
         (df['DATE'] >= start_date)
     )
     data = df[mask].copy()
+    data['CommodityHouseIDX'] = pd.to_numeric(data['CommodityHouseIDX'], errors='coerce')
+    data = data.dropna(subset=['CommodityHouseIDX'])
+    if data.empty:
+        raise ValueError('未找到可用于绘图的新建商品住宅同比数据')
     
     # 创建图表
     fig, ax = plt.subplots(figsize=(12, 6), dpi=150)
@@ -62,7 +65,7 @@ def main():
     plt.tight_layout()
     
     # 保存图片
-    output_path = script_dir.parent / 'assets' / 'price_trend.png'
+    output_path = get_repo_root() / 'assets' / 'price_trend.png'
     output_path.parent.mkdir(exist_ok=True)
     plt.savefig(output_path, bbox_inches='tight', facecolor='white')
     print(f'图表已保存至: {output_path}')

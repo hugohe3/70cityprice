@@ -10,90 +10,18 @@
     python3 update_70cityprice.py "https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html"
 """
 
-import pandas as pd
-import os
 import re
 import sys
-from datetime import datetime
+import pandas as pd
 
-# 70个城市的ADCODE映射
-CITY_ADCODE = {
-    '北京': '110100', '天津': '120100', '石家庄': '130100', '太原': '140100',
-    '呼和浩特': '150100', '沈阳': '210100', '大连': '210200', '长春': '220100',
-    '哈尔滨': '230100', '上海': '310100', '南京': '320100', '杭州': '330100',
-    '宁波': '330200', '合肥': '340100', '福州': '350100', '厦门': '350200',
-    '南昌': '360100', '济南': '370100', '青岛': '370200', '郑州': '410100',
-    '武汉': '420100', '长沙': '430100', '广州': '440100', '深圳': '440300',
-    '南宁': '450100', '海口': '460100', '重庆': '500100', '成都': '510100',
-    '贵阳': '520100', '昆明': '530100', '西安': '610100', '兰州': '620100',
-    '西宁': '630100', '银川': '640100', '乌鲁木齐': '650100',
-    # 35个其他城市
-    '唐山': '130200', '秦皇岛': '130300', '包头': '150200', '丹东': '210600',
-    '锦州': '210700', '吉林': '220200', '牡丹江': '231000', '无锡': '320200',
-    '徐州': '320300', '扬州': '321000', '温州': '330300', '金华': '330700',
-    '蚌埠': '340300', '安庆': '340800', '泉州': '350500', '九江': '360400',
-    '赣州': '360700', '烟台': '370600', '济宁': '370800', '洛阳': '410300',
-    '平顶山': '410400', '宜昌': '420500', '襄阳': '420600', '岳阳': '430600',
-    '常德': '430700', '韶关': '440200', '湛江': '440800', '惠州': '441300',
-    '桂林': '450300', '北海': '450500', '三亚': '460200', '泸州': '510500',
-    '南充': '511300', '遵义': '520300', '大理': '532900'
-}
-
-# 城市名称别名（用于统一解析）
-CITY_NAME_ALIASES = {
-    '大理白族自治州': '大理',
-    '大理自治州': '大理',
-    '大理市': '大理',
-}
-
-# 标准输出城市名（用于写入CSV）
-CITY_STANDARD_NAME = {city: city for city in CITY_ADCODE}
-
-# 城市名称标准化映射（处理空格等变体）
-def normalize_city_name(name):
-    """标准化城市名称"""
-    # 移除所有空格
-    name = name.replace(' ', '').replace('\u3000', '')  # 全角和半角空格
-    # 处理已知别名
-    if name in CITY_NAME_ALIASES:
-        return CITY_NAME_ALIASES[name]
-    # 移除"市"后缀
-    if name.endswith('市'):
-        name = name[:-1]
-    return name
-
-def get_city_adcode(city_name):
-    """获取城市的ADCODE"""
-    normalized = normalize_city_name(city_name)
-    if normalized in CITY_ADCODE:
-        return CITY_ADCODE[normalized]
-    # 尝试模糊匹配
-    for key in CITY_ADCODE:
-        if normalized in key or key in normalized:
-            return CITY_ADCODE[key]
-    print(f"警告: 未找到城市 '{city_name}' 的ADCODE")
-    return None
-
-def get_standard_city_name(city_name, warn_if_missing=False):
-    """获取标准输出城市名"""
-    normalized = normalize_city_name(city_name)
-    if normalized in CITY_STANDARD_NAME:
-        return CITY_STANDARD_NAME[normalized]
-    for key in CITY_STANDARD_NAME:
-        if normalized in key or key in normalized:
-            return CITY_STANDARD_NAME[key]
-    if warn_if_missing:
-        print(f"警告: 未找到城市 '{city_name}' 的标准名称")
-    return None
-
-def standardize_city_column(city_name):
-    """标准化CITY列值，未命中时保留原值"""
-    if pd.isna(city_name):
-        return city_name
-    standard_name = get_standard_city_name(str(city_name), warn_if_missing=False)
-    if standard_name:
-        return standard_name
-    return str(city_name).strip()
+from common import (
+    REQUIRED_COLUMNS,
+    get_city_adcode,
+    get_csv_path,
+    get_standard_city_name,
+    normalize_city_name,
+    standardize_city_column,
+)
 
 def parse_date_from_url(url):
     """从URL中解析日期"""
@@ -116,16 +44,14 @@ def parse_date_from_url(url):
 
 def parse_date_from_title(tables):
     """从表格标题中解析日期"""
-    try:
-        # 尝试从第一个表格获取标题
-        for table in tables:
-            first_row = table.iloc[0].astype(str)
-            for cell in first_row:
-                match = re.search(r'(\d{4})年(\d{1,2})月', str(cell))
-                if match:
-                    return int(match.group(1)), int(match.group(2))
-    except:
-        pass
+    for table in tables:
+        if table.empty:
+            continue
+        first_row = table.iloc[0].astype(str)
+        for cell in first_row:
+            match = re.search(r'(\d{4})年(\d{1,2})月', str(cell))
+            if match:
+                return int(match.group(1)), int(match.group(2))
     return None, None
 
 def extract_cities_from_table(table, start_row, end_row, city_col=0):
@@ -412,12 +338,7 @@ def update_csv(csv_path, new_records):
     combined_df = pd.concat([existing_df, new_df], ignore_index=True)
     
     # 确保列顺序一致
-    columns = ['DATE', 'ADCODE', 'CITY', 'FixedBase', 'HouseIDX', 'ResidentIDX',
-               'CommodityHouseIDX', 'SecondHandIDX', 'ResidentBelow90IDX',
-               'CommonResidentBelow90IDX', 'CommodityBelow90IDX', 'Commodity144IDX',
-               'CommodityAbove144IDX', 'SecondHandBelow90IDX', 'SecondHand144IDX',
-               'SecondHandAbove144IDX']
-    combined_df = combined_df[columns]
+    combined_df = combined_df[REQUIRED_COLUMNS]
     
     # 排序
     combined_df['DATE_SORT'] = pd.to_datetime(combined_df['DATE'], format='%Y/%m/%d', errors='coerce')
@@ -437,12 +358,9 @@ def main():
     
     url = sys.argv[1]
     
-    # 获取仓库根目录（脚本所在目录的上级）
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.dirname(script_dir)
-    csv_path = os.path.join(repo_root, '70cityprice.csv')
+    csv_path = get_csv_path()
     
-    if not os.path.exists(csv_path):
+    if not csv_path.exists():
         print(f"错误: CSV文件不存在: {csv_path}")
         sys.exit(1)
     
@@ -487,6 +405,8 @@ def main():
                                  commodity_size, secondhand_size)
         
         print(f"生成 {len(records)} 条新记录")
+        if not records:
+            raise ValueError("未生成任何新记录，请检查页面表格结构或URL是否匹配70城房价发布页")
         
         # 更新CSV
         update_csv(csv_path, records)

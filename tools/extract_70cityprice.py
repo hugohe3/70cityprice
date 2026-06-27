@@ -33,18 +33,13 @@
 指数类型: 同比 / 环比 / 定基比（支持逗号分隔多个）
 """
 
-import pandas as pd
-import os
 import sys
 import argparse
-from datetime import datetime
+from pathlib import Path
 
-ALLOWED_FIXED_BASES = {'同比', '环比', '定基比'}
-CITY_NAME_ALIASES = {
-    '大理白族自治州': '大理',
-    '大理自治州': '大理',
-    '大理市': '大理',
-}
+import pandas as pd
+
+from common import ALLOWED_FIXED_BASES, get_csv_path, get_repo_root, normalize_city_name
 
 
 def parse_month_arg(month_str):
@@ -81,30 +76,20 @@ def date_to_comparable(date_str):
         year = int(parts[0])
         month = int(parts[1])
         return (year, month)
-    except:
+    except (AttributeError, IndexError, TypeError, ValueError):
         return None
-
-
-def get_repo_root():
-    """获取仓库根目录（脚本所在目录的上级）"""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.dirname(script_dir)
-
-
-def get_csv_path():
-    """获取CSV文件路径"""
-    return os.path.join(get_repo_root(), '70cityprice.csv')
 
 
 def get_output_path(filename):
     """获取输出文件路径（默认保存到 projects/ 目录）"""
+    output_path = Path(filename)
     # 如果文件名已包含路径分隔符，则直接使用
-    if os.path.sep in filename or '/' in filename:
-        return os.path.join(get_repo_root(), filename)
+    if output_path.is_absolute() or output_path.parent != Path('.'):
+        return output_path if output_path.is_absolute() else get_repo_root() / output_path
     # 否则默认保存到 projects/ 目录
-    projects_dir = os.path.join(get_repo_root(), 'projects')
-    os.makedirs(projects_dir, exist_ok=True)
-    return os.path.join(projects_dir, filename)
+    projects_dir = get_repo_root() / 'projects'
+    projects_dir.mkdir(exist_ok=True)
+    return projects_dir / filename
 
 
 def load_data(csv_path=None):
@@ -112,7 +97,8 @@ def load_data(csv_path=None):
     if csv_path is None:
         csv_path = get_csv_path()
     
-    if not os.path.exists(csv_path):
+    csv_path = Path(csv_path)
+    if not csv_path.exists():
         print(f"错误: CSV文件不存在: {csv_path}")
         sys.exit(1)
     
@@ -157,17 +143,11 @@ def extract_by_city(df, cities):
         """城市名精确归一化：仅清理空白和大小写"""
         if pd.isna(name):
             return ''
-        normalized = str(name).lower().replace(' ', '').replace('\u3000', '').strip()
-        return CITY_NAME_ALIASES.get(normalized, normalized)
+        return normalize_city_name(name, strip_suffix=False)
 
     def normalize_city_fuzzy(name):
         """城市名宽松归一化：额外忽略常见行政后缀"""
-        normalized = normalize_city_exact(name)
-        for suffix in ['自治州', '地区', '盟', '市']:
-            if normalized.endswith(suffix):
-                normalized = normalized[:-len(suffix)]
-                break
-        return normalized
+        return normalize_city_name(name, strip_suffix=True)
 
     # 先做精确匹配
     requested_exact = {normalize_city_exact(city) for city in cities}
@@ -369,8 +349,6 @@ def cmd_list_cities(args):
     print(f"\n📍 可用城市列表 ({len(all_cities)}个):\n")
     
     # 按首字母分组显示
-    from collections import defaultdict
-    
     # 简单分列显示
     cols = 5
     for i in range(0, len(all_cities), cols):
