@@ -1,6 +1,6 @@
 # 70城房价数据 | China 70-City House Price Index
 
-[![数据更新](https://img.shields.io/badge/数据更新至-2026年5月-blue)]()
+[![数据更新](https://img.shields.io/badge/数据更新至-2026年6月-blue)]()
 [![城市数量](https://img.shields.io/badge/城市-70个大中城市-green)]()
 [![时间跨度](https://img.shields.io/badge/时间跨度-2006至今-orange)]()
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
@@ -44,7 +44,7 @@
 
 ```
 70cityprice/
-├── 70cityprice.csv         # 主数据文件（2006年至今，当前更新至2026年5月）
+├── 70cityprice.csv         # 主数据文件（2006年至今，当前更新至2026年6月）
 ├── README.md               # 项目说明文档
 ├── LICENSE                 # MIT 许可证
 ├── assets/                 # 资源文件
