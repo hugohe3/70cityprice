@@ -28,7 +28,7 @@ jobs:
           mkdir -p _site
           cp -R site/. _site/
           cp 70cityprice.csv _site/70cityprice.csv
-          python3 tools/build_site_data.py --output _site/data/dashboard.json
+          python3 scripts/build_site_data.py --output _site/data/dashboard.json
           asset_version="${GITHUB_SHA::12}"
           sed -i "s/__BUILD_VERSION__/${asset_version}/g" _site/index.html
           rm -f _site/data/.gitkeep

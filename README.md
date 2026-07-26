@@ -57,20 +57,32 @@
 ```
 70cityprice/
 ├── 70cityprice.csv         # 主数据文件（2006年至今，当前更新至2026年6月）
-├── README.md               # 项目说明文档
+├── README.md               # 项目说明文档（面向人类读者）
+├── SKILL.md                # AI 协作入口：数据心智模型与流程索引
+├── AGENTS.md               # 仓库级 AI 说明（CLAUDE.md 导入此文件）
 ├── LICENSE                 # MIT 许可证
+├── references/             # 领域知识（口径、命名、schema、官方表格解析）
+│   ├── schema.md
+│   ├── city-naming.md
+│   ├── fixedbase-caliber.md
+│   └── stats-table-parsing.md
+├── workflows/              # 可执行流程
+│   ├── monthly-update.md
+│   ├── extract.md
+│   ├── chart.md
+│   └── site-build.md
+├── scripts/                # 工具脚本目录
+│   ├── extract_70cityprice.py   # 数据提取脚本
+│   ├── update_70cityprice.py    # 数据更新脚本
+│   ├── validate_70cityprice.py  # 数据质量校验脚本
+│   ├── generate_chart.py        # 图表生成脚本
+│   └── build_site_data.py       # 构建网页专用数据
 ├── assets/                 # 资源文件
 │   └── price_trend.png     # 数据可视化图表
 ├── site/                   # GitHub Pages 静态数据浏览器
 │   ├── index.html
 │   ├── app.js
 │   └── styles.css
-├── tools/                  # 工具脚本目录
-│   ├── extract_70cityprice.py   # 数据提取脚本
-│   ├── update_70cityprice.py    # 数据更新脚本
-│   ├── validate_70cityprice.py  # 数据质量校验脚本
-│   ├── generate_chart.py        # 图表生成脚本
-│   └── build_site_data.py       # 构建网页专用数据
 ├── .github/workflows/
 │   └── deploy-pages.yml         # GitHub Pages 自动部署
 └── projects/               # 生成的数据文件（Git忽略，不上传）
@@ -79,10 +91,13 @@
 | 文件/目录 | 说明 |
 |-----------|------|
 | `70cityprice.csv` | 主数据文件，包含2006年至今的完整历史数据 |
-| `tools/update_70cityprice.py` | **自动更新脚本** - 从国家统计局网址抓取新数据并追加到CSV |
-| `tools/extract_70cityprice.py` | **数据提取脚本** - 按月份/城市提取数据到新文件 |
-| `tools/validate_70cityprice.py` | **数据校验脚本** - 检查结构、主键、月份连续性和70城覆盖 |
-| `tools/build_site_data.py` | **网页数据构建脚本** - 从主 CSV 生成紧凑的浏览器数据 |
+| `SKILL.md` | **AI 协作入口** - AI 助手处理本数据集前必读，含流程索引 |
+| `references/` | **领域知识** - 定基口径演变、城市命名、CSV schema、官方表格解析约定 |
+| `workflows/` | **可执行流程** - 月度更新、数据提取、图表生成、网页构建 |
+| `scripts/update_70cityprice.py` | **自动更新脚本** - 从国家统计局网址抓取新数据并追加到CSV |
+| `scripts/extract_70cityprice.py` | **数据提取脚本** - 按月份/城市提取数据到新文件 |
+| `scripts/validate_70cityprice.py` | **数据校验脚本** - 检查结构、主键、月份连续性和70城覆盖 |
+| `scripts/build_site_data.py` | **网页数据构建脚本** - 从主 CSV 生成紧凑的浏览器数据 |
 | `site/` | **静态数据浏览器** - 无前端框架和第三方运行时依赖 |
 | `projects/` | 本地生成的数据文件目录（Git忽略） |
 
@@ -103,16 +118,16 @@ pip3 install -r requirements.txt
 每月国家统计局发布新数据后，只需运行：
 
 ```bash
-python3 tools/update_70cityprice.py "国家统计局发布页面的URL"
+python3 scripts/update_70cityprice.py "国家统计局发布页面的URL"
 ```
 
 **示例：**
 ```bash
 # 更新6月份数据（7月发布）
-python3 tools/update_70cityprice.py "https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html"
+python3 scripts/update_70cityprice.py "https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960403.html"
 
 # 更新1月份数据（2月发布）- 脚本会自动处理没有年度平均的情况
-python3 tools/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502/t20250219_1958761.html"
+python3 scripts/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202502/t20250219_1958761.html"
 ```
 
 脚本会自动：
@@ -128,71 +143,71 @@ python3 tools/update_70cityprice.py "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020
 #### 按月份提取
 
 ```bash
-python3 tools/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
+python3 scripts/extract_70cityprice.py month <起始月份> <结束月份> [输出文件名] [--fixedbase 指数类型]
 ```
 
 **示例：**
 ```bash
 # 提取2025年7月至11月的数据（自动保存到 projects/ 目录）
-python3 tools/extract_70cityprice.py month 202507 202511
+python3 scripts/extract_70cityprice.py month 202507 202511
 
 # 指定输出文件名
-python3 tools/extract_70cityprice.py month 202507 202511 my_data.csv
+python3 scripts/extract_70cityprice.py month 202507 202511 my_data.csv
 
 # 支持多种日期格式
-python3 tools/extract_70cityprice.py month 2024-01 2024-12
+python3 scripts/extract_70cityprice.py month 2024-01 2024-12
 
 # 仅提取环比
-python3 tools/extract_70cityprice.py month 202401 202412 --fixedbase 环比
+python3 scripts/extract_70cityprice.py month 202401 202412 --fixedbase 环比
 ```
 
 #### 按城市提取
 
 ```bash
-python3 tools/extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
+python3 scripts/extract_70cityprice.py city <城市名1> [城市名2] ... [--output 输出文件名] [--fixedbase 指数类型]
 ```
 
 **示例：**
 ```bash
 # 提取单个城市的全部历史数据
-python3 tools/extract_70cityprice.py city 成都
+python3 scripts/extract_70cityprice.py city 成都
 
 # 提取多个城市
-python3 tools/extract_70cityprice.py city 北京 上海 广州 深圳
+python3 scripts/extract_70cityprice.py city 北京 上海 广州 深圳
 
 # 指定输出文件名
-python3 tools/extract_70cityprice.py city 成都 --output chengdu.csv
+python3 scripts/extract_70cityprice.py city 成都 --output chengdu.csv
 
 # 提取城市的同比+环比
-python3 tools/extract_70cityprice.py city 成都 --fixedbase 同比,环比
+python3 scripts/extract_70cityprice.py city 成都 --fixedbase 同比,环比
 ```
 
 #### 组合过滤（城市+月份）
 
 ```bash
-python3 tools/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--fixedbase 指数类型]
+python3 scripts/extract_70cityprice.py filter --cities <城市1> <城市2> ... --start <起始月份> --end <结束月份> [--fixedbase 指数类型]
 ```
 
 **示例：**
 ```bash
 # 提取成都和重庆2024年全年数据
-python3 tools/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
+python3 scripts/extract_70cityprice.py filter --cities 成都 重庆 --start 202401 --end 202412
 
 # 提取重庆最近三年的环比
-python3 tools/extract_70cityprice.py filter --cities 重庆 --start 202301 --end 202512 --fixedbase 环比
+python3 scripts/extract_70cityprice.py filter --cities 重庆 --start 202301 --end 202512 --fixedbase 环比
 ```
 
 #### 辅助命令
 
 ```bash
 # 列出所有可用城市
-python3 tools/extract_70cityprice.py list-cities
+python3 scripts/extract_70cityprice.py list-cities
 
 # 列出数据日期范围
-python3 tools/extract_70cityprice.py list-dates
+python3 scripts/extract_70cityprice.py list-dates
 
 # 校验主数据质量（建议更新后执行）
-python3 tools/validate_70cityprice.py
+python3 scripts/validate_70cityprice.py
 ```
 
 ### 输出文件位置
@@ -216,9 +231,9 @@ python3 tools/validate_70cityprice.py
 ### 🏷️ 城市命名口径说明
 
 - **主数据存储口径**：`CITY` 列统一采用国家统计局当前发布写法（无“市”后缀），例如 `北京`、`成都`、`大理`。
-- **更新脚本写入口径**：`tools/update_70cityprice.py` 在抓取后会自动标准化城市名，写回CSV时保持上述统一口径。
-- **提取脚本输入兼容**：`tools/extract_70cityprice.py` 同时兼容 `北京/北京市`、`成都/成都市`、`大理/大理市/大理白族自治州` 等常见写法。
-- **历史兼容建议**：若你有旧版导出文件（带“市”后缀或“自治州”写法），建议先运行 `python3 tools/validate_70cityprice.py` 检查口径一致性。
+- **更新脚本写入口径**：`scripts/update_70cityprice.py` 在抓取后会自动标准化城市名，写回CSV时保持上述统一口径。
+- **提取脚本输入兼容**：`scripts/extract_70cityprice.py` 同时兼容 `北京/北京市`、`成都/成都市`、`大理/大理市/大理白族自治州` 等常见写法。
+- **历史兼容建议**：若你有旧版导出文件（带“市”后缀或“自治州”写法），建议先运行 `python3 scripts/validate_70cityprice.py` 检查口径一致性。
 
 ## 📋 数据结构
 
