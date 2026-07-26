@@ -1,8 +1,15 @@
 "use strict";
 
-const METRICS = {
+const MARKETS = {
   new: "新建商品住宅",
   resale: "二手住宅",
+};
+
+const AREAS = {
+  all: "综合",
+  below90: "90㎡以下",
+  between90And144: "90–144㎡",
+  above144: "144㎡以上",
 };
 
 const BASES = {
@@ -14,12 +21,17 @@ const BASES = {
     label: "环比",
     comparison: "上月",
   },
+  fixed: {
+    label: "定基/累计",
+    comparison: "对应基准",
+  },
 };
 
 const state = {
   data: null,
   city: "110100",
-  metric: "new",
+  market: "new",
+  area: "all",
   basis: "yoy",
   range: 60,
   search: "",
@@ -28,6 +40,7 @@ const state = {
 const elements = {};
 let chartModel = null;
 let resizeFrame = null;
+let activeCityOptionIndex = -1;
 
 document.addEventListener("DOMContentLoaded", initialize);
 
@@ -44,7 +57,7 @@ async function initialize() {
     state.data = await response.json();
     validateData(state.data);
     applyUrlState();
-    populateCitySelect();
+    initializeCityPicker();
     elements.dashboard.hidden = false;
     renderAll();
     elements.status.hidden = true;
@@ -56,12 +69,14 @@ async function initialize() {
 
 function cacheElements() {
   const ids = [
+    "area-control",
     "basis-control",
     "chart-city",
     "chart-tooltip",
     "city-coverage",
+    "city-input",
+    "city-options",
     "city-search",
-    "city-select",
     "dashboard",
     "data-through",
     "falling-count",
@@ -75,7 +90,7 @@ function cacheElements() {
     "latest-value",
     "legend-label",
     "market-caption",
-    "metric-control",
+    "market-control",
     "month-coverage",
     "page-status",
     "point-change",
@@ -96,17 +111,48 @@ function cacheElements() {
 }
 
 function bindEvents() {
-  elements.citySelect.addEventListener("change", (event) => {
-    state.city = event.target.value;
-    renderCityViews();
+  elements.cityInput.addEventListener("focus", (event) => {
+    event.target.select();
+    renderCityOptions("");
+  });
+
+  elements.cityInput.addEventListener("input", (event) => {
+    renderCityOptions(event.target.value);
+  });
+
+  elements.cityInput.addEventListener("change", () => {
+    const exactCity = findCityByQuery(elements.cityInput.value);
+    if (exactCity) {
+      selectCity(exactCity.adcode);
+    } else {
+      elements.cityInput.value = getSelectedCity().name;
+    }
+  });
+
+  elements.cityInput.addEventListener("keydown", handleCityInputKeydown);
+  elements.cityOptions.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-adcode]");
+    if (option) selectCity(option.dataset.adcode);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".city-picker")) closeCityOptions();
+  });
+
+  elements.marketControl.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-value]");
+    if (!button) return;
+    state.market = button.dataset.value;
+    setActiveButton(elements.marketControl, state.market);
+    renderAllViews();
     syncUrl();
   });
 
-  elements.metricControl.addEventListener("click", (event) => {
+  elements.areaControl.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-value]");
     if (!button) return;
-    state.metric = button.dataset.value;
-    setActiveButton(elements.metricControl, state.metric);
+    state.area = button.dataset.value;
+    setActiveButton(elements.areaControl, state.area);
     renderAllViews();
     syncUrl();
   });
@@ -147,7 +193,7 @@ function bindEvents() {
 
 function validateData(data) {
   if (
-    data.schemaVersion !== 1 ||
+    data.schemaVersion !== 2 ||
     !Array.isArray(data.dates) ||
     !Array.isArray(data.cities) ||
     typeof data.series !== "object"
@@ -159,31 +205,143 @@ function validateData(data) {
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
   const city = params.get("city");
-  const metric = params.get("metric");
+  const market = params.get("market") || params.get("metric");
+  const area = params.get("area");
   const basis = params.get("basis");
   const range = params.get("range");
 
   if (city && state.data.series[city]) state.city = city;
-  if (metric && METRICS[metric]) state.metric = metric;
+  if (market && MARKETS[market]) state.market = market;
+  if (area && AREAS[area]) state.area = area;
   if (basis && BASES[basis]) state.basis = basis;
   if (range === "all") state.range = "all";
   if (["36", "60", "120"].includes(range)) state.range = Number(range);
 
-  setActiveButton(elements.metricControl, state.metric);
+  setActiveButton(elements.marketControl, state.market);
+  setActiveButton(elements.areaControl, state.area);
   setActiveButton(elements.basisControl, state.basis);
   elements.rangeSelect.value = String(state.range);
 }
 
-function populateCitySelect() {
+function initializeCityPicker() {
+  elements.cityInput.value = getSelectedCity().name;
+  renderCityOptions("");
+  closeCityOptions();
+}
+
+function renderCityOptions(query) {
+  const normalizedQuery = query.trim().toLowerCase();
   const fragment = document.createDocumentFragment();
-  state.data.cities.forEach((city) => {
-    const option = document.createElement("option");
-    option.value = city.adcode;
-    option.textContent = city.name;
+  const cities = state.data.cities.filter((city) => {
+    return (
+      city.name.toLowerCase().includes(normalizedQuery) ||
+      city.adcode.includes(normalizedQuery)
+    );
+  });
+
+  cities.forEach((city) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.tabIndex = -1;
+    option.id = `city-option-${city.adcode}`;
+    option.className = "city-option";
+    option.dataset.adcode = city.adcode;
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", String(city.adcode === state.city));
+
+    const name = document.createElement("span");
+    name.textContent = city.name;
+    const adcode = document.createElement("small");
+    adcode.textContent = city.adcode;
+    option.append(name, adcode);
     fragment.appendChild(option);
   });
-  elements.citySelect.appendChild(fragment);
-  elements.citySelect.value = state.city;
+
+  if (!cities.length) {
+    const empty = document.createElement("p");
+    empty.className = "city-option-empty";
+    empty.textContent = "没有匹配的城市";
+    fragment.appendChild(empty);
+  }
+
+  activeCityOptionIndex = -1;
+  elements.cityInput.removeAttribute("aria-activedescendant");
+  elements.cityOptions.replaceChildren(fragment);
+  elements.cityOptions.hidden = false;
+  elements.cityInput.setAttribute("aria-expanded", "true");
+}
+
+function closeCityOptions() {
+  elements.cityOptions.hidden = true;
+  elements.cityInput.setAttribute("aria-expanded", "false");
+  elements.cityInput.removeAttribute("aria-activedescendant");
+  activeCityOptionIndex = -1;
+}
+
+function findCityByQuery(query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  return state.data.cities.find((city) => {
+    return (
+      city.name.toLowerCase() === normalizedQuery ||
+      city.adcode === normalizedQuery
+    );
+  });
+}
+
+function handleCityInputKeydown(event) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeCityOptions();
+    elements.cityInput.value = getSelectedCity().name;
+    return;
+  }
+
+  if (elements.cityOptions.hidden && ["ArrowDown", "ArrowUp"].includes(event.key)) {
+    renderCityOptions(elements.cityInput.value);
+  }
+
+  const options = [...elements.cityOptions.querySelectorAll("[data-adcode]")];
+  if (!options.length) return;
+
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    const direction = event.key === "ArrowDown" ? 1 : -1;
+    activeCityOptionIndex =
+      (activeCityOptionIndex + direction + options.length) % options.length;
+    updateActiveCityOption(options);
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const activeOption = options[activeCityOptionIndex];
+    const exactCity = findCityByQuery(elements.cityInput.value);
+    if (activeOption) {
+      selectCity(activeOption.dataset.adcode);
+    } else if (exactCity) {
+      selectCity(exactCity.adcode);
+    }
+  }
+}
+
+function updateActiveCityOption(options) {
+  options.forEach((option, index) => {
+    option.classList.toggle("active", index === activeCityOptionIndex);
+  });
+  const activeOption = options[activeCityOptionIndex];
+  elements.cityInput.setAttribute("aria-activedescendant", activeOption.id);
+  activeOption.scrollIntoView({ block: "nearest" });
+}
+
+function selectCity(adcode, options = {}) {
+  state.city = adcode;
+  elements.cityInput.value = getSelectedCity().name;
+  closeCityOptions();
+  renderCityViews();
+  syncUrl();
+  if (options.scrollToOverview) {
+    document.querySelector(".overview-grid").scrollIntoView({ behavior: "smooth" });
+  }
 }
 
 function renderAll() {
@@ -206,10 +364,10 @@ function renderAllViews() {
 
 function renderCityViews() {
   const city = getSelectedCity();
-  elements.citySelect.value = state.city;
+  elements.cityInput.value = city.name;
   elements.chartCity.textContent = city.name;
   elements.historyCity.textContent = city.name;
-  elements.legendLabel.textContent = `${METRICS[state.metric]} · ${BASES[state.basis].label}`;
+  elements.legendLabel.textContent = `${getMetricLabel()} · ${BASES[state.basis].label}`;
   renderChart();
   renderLatest();
   renderHistory();
@@ -220,7 +378,12 @@ function getSelectedCity() {
 }
 
 function getSeries(adcode = state.city) {
-  return state.data.series[adcode][state.metric][state.basis];
+  return state.data.series[adcode][state.market][state.area][state.basis];
+}
+
+function getMetricLabel() {
+  const area = state.area === "all" ? "" : ` · ${AREAS[state.area]}`;
+  return `${MARKETS[state.market]}${area}`;
 }
 
 function renderLatest() {
@@ -251,7 +414,7 @@ function renderLatest() {
 }
 
 function buildIndexExplanation(movement) {
-  const subject = METRICS[state.metric];
+  const subject = getMetricLabel();
   const comparison = BASES[state.basis].comparison;
   if (Math.abs(movement) < 0.05) {
     return `${subject}价格与${comparison}基本持平。`;
@@ -276,7 +439,7 @@ function renderMarket() {
   elements.flatCount.textContent = counts.flat;
   elements.fallingCount.textContent = counts.falling;
   elements.marketCaption.textContent =
-    `${formatMonth(latestMonth)} · ${METRICS[state.metric]}${BASES[state.basis].label}指数`;
+    `${formatMonth(latestMonth)} · ${getMetricLabel()} · ${BASES[state.basis].label}指数`;
 }
 
 function buildRankingRows() {
@@ -345,10 +508,7 @@ function buildCell(text, className = "") {
 function selectRankingCity(event) {
   const row = event.target.closest(".city-row");
   if (!row) return;
-  state.city = row.dataset.adcode;
-  renderCityViews();
-  syncUrl();
-  document.querySelector(".overview-grid").scrollIntoView({ behavior: "smooth" });
+  selectCity(row.dataset.adcode, { scrollToOverview: true });
 }
 
 function renderHistory() {
@@ -452,7 +612,7 @@ function renderChart() {
 
   canvas.setAttribute(
     "aria-label",
-    `${getSelectedCity().name}${METRICS[state.metric]}${BASES[state.basis].label}指数，` +
+    `${getSelectedCity().name}${getMetricLabel()}${BASES[state.basis].label}指数，` +
     `${formatMonth(points[0].date)}至${formatMonth(lastPoint.date)}，最新值${formatIndex(lastPoint.value)}`,
   );
 }
@@ -553,7 +713,8 @@ function setActiveButton(container, value) {
 function syncUrl() {
   const params = new URLSearchParams();
   params.set("city", state.city);
-  params.set("metric", state.metric);
+  params.set("market", state.market);
+  params.set("area", state.area);
   params.set("basis", state.basis);
   params.set("range", String(state.range));
   window.history.replaceState(null, "", `${window.location.pathname}?${params}`);

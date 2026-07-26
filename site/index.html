@@ -29,7 +29,7 @@
         <p class="eyebrow">CHINA HOUSE PRICE INDEX</p>
         <h1>看懂 70 座城市<br>房价正在怎么变</h1>
         <p class="hero-summary">
-          国家统计局月度数据，一处浏览新房、二手房的同比与环比走势。
+          国家统计局月度数据，一处浏览新房、二手房及不同面积住宅的同比、环比与定基/累计走势。
           选择一座城市，从最新变化看到完整历史。
         </p>
         <div class="data-facts" aria-label="数据概览">
@@ -53,16 +53,38 @@
     </section>
 
     <section class="control-panel" aria-label="数据筛选">
-      <label class="control-field city-control">
-        <span>城市</span>
-        <select id="city-select" aria-label="选择城市"></select>
-      </label>
+      <div class="control-field city-control">
+        <label class="control-label" for="city-input">城市</label>
+        <div class="city-picker">
+          <input
+            id="city-input"
+            type="search"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="city-options"
+            aria-expanded="false"
+            autocomplete="off"
+            placeholder="搜索城市"
+          >
+          <div id="city-options" class="city-options" role="listbox" hidden></div>
+        </div>
+      </div>
 
       <fieldset class="control-field">
         <legend>住宅类型</legend>
-        <div class="segment-control" id="metric-control">
+        <div class="segment-control" id="market-control">
           <button type="button" class="active" data-value="new" aria-pressed="true">新建商品住宅</button>
           <button type="button" data-value="resale" aria-pressed="false">二手住宅</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="control-field area-control">
+        <legend>面积分类</legend>
+        <div class="segment-control area-segments" id="area-control">
+          <button type="button" class="active" data-value="all" aria-pressed="true">综合</button>
+          <button type="button" data-value="below90" aria-pressed="false">90㎡以下</button>
+          <button type="button" data-value="between90And144" aria-pressed="false">90–144㎡</button>
+          <button type="button" data-value="above144" aria-pressed="false">144㎡以上</button>
         </div>
       </fieldset>
 
@@ -71,6 +93,7 @@
         <div class="segment-control compact" id="basis-control">
           <button type="button" class="active" data-value="yoy" aria-pressed="true">同比</button>
           <button type="button" data-value="mom" aria-pressed="false">环比</button>
+          <button type="button" data-value="fixed" aria-pressed="false">定基/累计</button>
         </div>
       </fieldset>
 
@@ -206,6 +229,7 @@
         <div class="method-grid">
           <p><strong>同比</strong>以上年同月为 100，适合观察中长期变化。比如 98.5 表示较上年同月下降约 1.5%。</p>
           <p><strong>环比</strong>以上月为 100，更灵敏地反映近期变化。比如 100.3 表示较上月上涨约 0.3%。</p>
+          <p><strong>定基/累计</strong>2011–2022 年为轮换基期的定基指数；2023 年起为年内累计同比，不宜直接连成长期序列。</p>
           <p><strong>数据来源</strong>为国家统计局。网页数据由仓库主 CSV 自动生成，月度更新后随 GitHub Pages 同步发布。</p>
         </div>
       </section>

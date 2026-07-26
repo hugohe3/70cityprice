@@ -14,15 +14,26 @@ from common import CITY_ADCODE, get_csv_path, get_repo_root
 BASE_COLUMNS = {
     '同比': 'yoy',
     '环比': 'mom',
+    '定基比': 'fixed',
 }
 
-METRIC_COLUMNS = {
-    'new': 'CommodityHouseIDX',
-    'resale': 'SecondHandIDX',
+MARKET_COLUMNS = {
+    'new': {
+        'all': 'CommodityHouseIDX',
+        'below90': 'CommodityBelow90IDX',
+        'between90And144': 'Commodity144IDX',
+        'above144': 'CommodityAbove144IDX',
+    },
+    'resale': {
+        'all': 'SecondHandIDX',
+        'below90': 'SecondHandBelow90IDX',
+        'between90And144': 'SecondHand144IDX',
+        'above144': 'SecondHandAbove144IDX',
+    },
 }
 
 Number = Union[int, float]
-SeriesKey = Tuple[str, str, str, str]
+SeriesKey = Tuple[str, str, str, str, str]
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,7 +79,11 @@ def read_source(
             'ADCODE',
             'CITY',
             'FixedBase',
-            *METRIC_COLUMNS.values(),
+            *(
+                column
+                for area_columns in MARKET_COLUMNS.values()
+                for column in area_columns.values()
+            ),
         }
         missing_columns = required_columns.difference(reader.fieldnames or [])
         if missing_columns:
@@ -89,11 +104,12 @@ def read_source(
 
             month = parse_month(row['DATE'])
             dates.add(month)
-            for metric, column in METRIC_COLUMNS.items():
-                key = (expected_adcode, metric, base, month)
-                if key in values:
-                    raise ValueError(f'发现重复网页数据键: {key}')
-                values[key] = parse_number(row[column])
+            for market, area_columns in MARKET_COLUMNS.items():
+                for area, column in area_columns.items():
+                    key = (expected_adcode, market, area, base, month)
+                    if key in values:
+                        raise ValueError(f'发现重复网页数据键: {key}')
+                    values[key] = parse_number(row[column])
 
     return sorted(dates), values
 
@@ -111,29 +127,40 @@ def build_payload(
     for city in cities:
         adcode = city['adcode']
         city_series = {}
-        for metric in METRIC_COLUMNS:
-            metric_series = {}
-            for base in BASE_COLUMNS.values():
-                points = [
-                    values.get((adcode, metric, base, month))
-                    for month in dates
-                ]
-                if all(point is None for point in points):
-                    raise ValueError(
-                        f"{city['name']} 的 {metric}/{base} 没有可用数据"
-                    )
-                metric_series[base] = points
-            city_series[metric] = metric_series
+        for market, area_columns in MARKET_COLUMNS.items():
+            market_series = {}
+            for area in area_columns:
+                area_series = {}
+                for base in BASE_COLUMNS.values():
+                    points = [
+                        values.get((adcode, market, area, base, month))
+                        for month in dates
+                    ]
+                    if all(point is None for point in points):
+                        raise ValueError(
+                            f"{city['name']} 的 "
+                            f"{market}/{area}/{base} 没有可用数据"
+                        )
+                    area_series[base] = points
+                market_series[area] = area_series
+            city_series[market] = market_series
         series[adcode] = city_series
 
     return {
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'meta': {
             'source': '国家统计局',
             'startMonth': dates[0],
             'endMonth': dates[-1],
             'monthCount': len(dates),
             'cityCount': len(cities),
+            'marketCount': len(MARKET_COLUMNS),
+            'areaCount': len(next(iter(MARKET_COLUMNS.values()))),
+            'metricCount': sum(
+                len(area_columns)
+                for area_columns in MARKET_COLUMNS.values()
+            ),
+            'basisCount': len(BASE_COLUMNS),
         },
         'dates': dates,
         'cities': cities,

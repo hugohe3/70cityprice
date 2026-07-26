@@ -18,6 +18,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -284,8 +288,8 @@ footer {
   top: 12px;
   display: grid;
   align-items: end;
-  grid-template-columns: 1fr 1.55fr 0.85fr 0.75fr;
-  gap: 0.8rem;
+  grid-template-columns: 1fr 1.25fr 1.8fr 1.2fr 0.75fr;
+  gap: 0.65rem;
   padding: 1rem;
   border: 1px solid rgba(217, 215, 205, 0.85);
   border-radius: 20px;
@@ -302,6 +306,7 @@ footer {
 }
 
 .control-field > span,
+.control-field > .control-label,
 .control-field legend {
   display: block;
   margin: 0 0 0.42rem 0.35rem;
@@ -314,16 +319,83 @@ footer {
 
 select,
 .segment-control,
-.search-field input {
+.search-field input,
+.city-picker input {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #f9f7f0;
 }
 
-select {
+select,
+.city-picker input {
   min-height: 46px;
   padding: 0 2.2rem 0 0.8rem;
+}
+
+.city-picker {
+  position: relative;
+}
+
+.city-picker input {
+  padding-right: 0.8rem;
+  outline: none;
+}
+
+.city-picker input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(31, 111, 104, 0.12);
+}
+
+.city-options {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: min(320px, 90vw);
+  max-height: 300px;
+  padding: 0.4rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--card);
+  box-shadow: 0 18px 50px rgba(29, 38, 35, 0.18);
+}
+
+.city-option,
+.city-option-empty {
+  width: 100%;
+  padding: 0.65rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+}
+
+.city-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.city-option:hover,
+.city-option.active {
+  background: #eeebe2;
+}
+
+.city-option[aria-selected="true"] {
+  color: var(--accent-deep);
+  font-weight: 750;
+}
+
+.city-option small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.city-option-empty {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .segment-control {
@@ -347,6 +419,11 @@ select {
   background: var(--ink);
   box-shadow: 0 3px 9px rgba(29, 38, 35, 0.16);
   color: white;
+}
+
+.area-segments button {
+  padding-inline: 0.35rem;
+  font-size: 0.74rem;
 }
 
 .page-status {
@@ -752,7 +829,7 @@ td {
 
 .method-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 2rem;
   margin-top: 2rem;
 }
@@ -812,6 +889,10 @@ footer p {
     grid-template-columns: 1fr 1fr;
   }
 
+  .area-control {
+    grid-column: 1 / -1;
+  }
+
   .overview-grid {
     grid-template-columns: 1fr;
   }
@@ -822,6 +903,10 @@ footer p {
 
   .history-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .method-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
