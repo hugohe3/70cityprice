@@ -106,6 +106,10 @@ function cacheElements() {
     "ranking-body",
     "ranking-empty",
     "rising-count",
+    "snapshot-basis",
+    "snapshot-city",
+    "snapshot-grid",
+    "snapshot-month",
     "trend-chart",
     "year-range",
   ];
@@ -183,6 +187,18 @@ function bindEvents() {
     setActiveButton(elements.basisControl, state.basis);
     renderAllViews();
     syncUrl();
+  });
+
+  elements.snapshotGrid.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-market][data-area]");
+    if (!card) return;
+    state.market = card.dataset.market;
+    state.area = card.dataset.area;
+    setActiveButton(elements.marketControl, state.market);
+    setActiveButton(elements.areaControl, state.area);
+    renderAllViews();
+    syncUrl();
+    document.querySelector(".overview-grid").scrollIntoView({ behavior: "smooth" });
   });
 
   elements.rangeSelect.addEventListener("change", (event) => {
@@ -388,9 +404,11 @@ function renderCityViews() {
   elements.cityInput.value = city.name;
   elements.chartCity.textContent = city.name;
   elements.historyCity.textContent = city.name;
+  elements.snapshotCity.textContent = city.name;
   elements.legendLabel.textContent = `${getMetricLabel()} · ${BASES[state.basis].label}`;
   renderChart();
   renderLatest();
+  renderSnapshot();
   renderHistory();
 }
 
@@ -443,6 +461,80 @@ function buildIndexExplanation(movement) {
 
   const direction = movement > 0 ? "上涨" : "下降";
   return `${subject}价格较${comparison}${direction}约 ${Math.abs(movement).toFixed(1)}%。`;
+}
+
+function renderSnapshot() {
+  const fragment = document.createDocumentFragment();
+  const latestMonth = state.data.meta.endMonth;
+
+  elements.snapshotMonth.textContent = formatMonth(latestMonth);
+  elements.snapshotBasis.textContent = `${BASES[state.basis].label}口径`;
+
+  Object.entries(MARKETS).forEach(([market, marketLabel]) => {
+    const group = document.createElement("article");
+    group.className = "snapshot-market";
+
+    const heading = document.createElement("div");
+    heading.className = "snapshot-market-heading";
+    const title = document.createElement("h3");
+    title.textContent = marketLabel;
+    const hint = document.createElement("span");
+    hint.textContent = "指数 100 = 持平";
+    heading.append(title, hint);
+
+    const metrics = document.createElement("div");
+    metrics.className = "snapshot-metrics";
+    Object.entries(AREAS).forEach(([area, areaLabel]) => {
+      metrics.appendChild(buildSnapshotMetric(market, area, areaLabel));
+    });
+
+    group.append(heading, metrics);
+    fragment.appendChild(group);
+  });
+
+  elements.snapshotGrid.replaceChildren(fragment);
+}
+
+function buildSnapshotMetric(market, area, areaLabel) {
+  const values = state.data.series[state.city][market][area][state.basis];
+  const latestIndex = findLastValueIndex(values);
+  const previousIndex = findPreviousValueIndex(values, latestIndex);
+  const value = latestIndex >= 0 ? values[latestIndex] : null;
+  const previous = previousIndex >= 0 ? values[previousIndex] : null;
+  const change = isNumber(value) && isNumber(previous) ? value - previous : null;
+  const status = classifyIndex(value);
+  const isActive = market === state.market && area === state.area;
+  const button = document.createElement("button");
+
+  button.type = "button";
+  button.className = `snapshot-metric${isActive ? " active" : ""}`;
+  button.dataset.market = market;
+  button.dataset.area = area;
+  button.setAttribute("aria-pressed", String(isActive));
+  button.setAttribute(
+    "aria-label",
+    `${MARKETS[market]}${areaLabel}，指数 ${formatIndex(value)}，${status.label}`,
+  );
+
+  const top = document.createElement("span");
+  top.className = "snapshot-metric-top";
+  const label = document.createElement("span");
+  label.textContent = areaLabel;
+  const stateLabel = document.createElement("span");
+  stateLabel.className = `snapshot-state direction-${status.className || "flat"}`;
+  stateLabel.textContent = `${status.symbol} ${status.label}`;
+  top.append(label, stateLabel);
+
+  const metricValue = document.createElement("strong");
+  metricValue.textContent = formatIndex(value);
+  const changeLabel = document.createElement("small");
+  changeLabel.className = directionClass(change);
+  changeLabel.textContent = change === null
+    ? "暂无上期对比"
+    : `较上期读数 ${formatSigned(change)} 点`;
+
+  button.append(top, metricValue, changeLabel);
+  return button;
 }
 
 function renderMarket() {
@@ -742,6 +834,9 @@ function syncUrl() {
 }
 
 function classifyIndex(value) {
+  if (!isNumber(value)) {
+    return { key: "flat", label: "暂无", className: "flat", symbol: "—" };
+  }
   if (value > 100.05) {
     return { key: "rising", label: "上涨", className: "up", symbol: "↑" };
   }

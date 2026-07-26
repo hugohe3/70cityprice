@@ -466,6 +466,7 @@ select,
 
 .chart-card,
 .latest-card,
+.snapshot-section,
 .ranking-section,
 .history-section,
 .method-section {
@@ -642,8 +643,131 @@ select,
   font-size: 1rem;
 }
 
+.snapshot-section {
+  margin-top: 5.5rem;
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  background: #e2ebe6;
+}
+
+.snapshot-context {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+}
+
+.snapshot-context strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.snapshot-context span {
+  margin-top: 0.2rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 99px;
+  background: var(--teal);
+  color: white;
+  font-size: 0.68rem;
+}
+
+.snapshot-intro {
+  max-width: 650px;
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.snapshot-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.snapshot-market {
+  padding: 1.25rem;
+  border: 1px solid rgba(31, 111, 104, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 254, 249, 0.72);
+}
+
+.snapshot-market-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.snapshot-market-heading h3 {
+  margin: 0;
+  font-family: "Songti SC", SimSun, Georgia, serif;
+  font-size: 1.15rem;
+}
+
+.snapshot-market-heading span {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.snapshot-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.snapshot-metric {
+  display: flex;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid #dcded7;
+  border-radius: 13px;
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+  flex-direction: column;
+}
+
+.snapshot-metric:hover {
+  border-color: rgba(31, 111, 104, 0.55);
+  transform: translateY(-1px);
+}
+
+.snapshot-metric.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(217, 79, 49, 0.11);
+}
+
+.snapshot-metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.71rem;
+}
+
+.snapshot-state {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.snapshot-metric strong {
+  margin-top: 0.75rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.snapshot-metric small {
+  margin-top: 0.45rem;
+  font-size: 0.65rem;
+}
+
 .market-section {
-  padding: 6.5rem 0 1rem;
+  padding: 5.5rem 0 1rem;
 }
 
 .section-caption {
@@ -921,6 +1045,10 @@ footer p {
     grid-template-columns: 1fr;
   }
 
+  .snapshot-groups {
+    grid-template-columns: 1fr;
+  }
+
   .latest-card {
     min-height: 390px;
   }
@@ -971,9 +1099,18 @@ footer p {
   }
 
   .chart-heading,
-  .section-heading {
+  .section-heading:not(.snapshot-heading) {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .snapshot-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .snapshot-context {
+    align-items: flex-start;
   }
 
   .chart-legend {
