@@ -23,13 +23,25 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      # 分享卡片用 matplotlib 绘制，中文字体缺失会渲染成豆腐块，
+      # build_site_pages.py 检测不到可用字体时会直接报错而不是静默产出。
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
+          python3 -m pip install --quiet matplotlib
+
       - name: Assemble static site
         run: |
           mkdir -p _site
           cp -R site/. _site/
           cp 70cityprice.csv _site/70cityprice.csv
-          python3 scripts/build_site_data.py --output-dir _site/data
           asset_version="${GITHUB_SHA::12}"
+          python3 scripts/build_site_data.py --output-dir _site/data
+          python3 scripts/build_site_pages.py \
+            --site-dir _site \
+            --origin "https://hugohe3.github.io/70cityprice" \
+            --build-version "${asset_version}"
           sed -i "s/__BUILD_VERSION__/${asset_version}/g" _site/index.html
           rm -f _site/data/.gitkeep
           touch _site/.nojekyll

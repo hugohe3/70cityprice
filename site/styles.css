@@ -1012,6 +1012,48 @@ td {
   font-size: 1rem;
 }
 
+.city-index {
+  margin-top: 4.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.city-index h2 {
+  margin: 0;
+  font-family: "Songti SC", SimSun, Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.city-index p {
+  margin: 0.5rem 0 1.4rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.city-index ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.city-index a {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.city-index a:hover {
+  border-color: var(--ink);
+}
+
 footer {
   display: flex;
   justify-content: space-between;

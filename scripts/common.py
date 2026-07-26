@@ -45,6 +45,34 @@ CITY_ADCODE = {
     '南充': '511300', '遵义': '520300', '大理': '532900'
 }
 
+# 静态城市页的 URL slug。一旦发布就不要改动——改了等于换 URL，
+# 已被收录的页面和别人分享出去的链接都会失效。
+CITY_SLUG = {
+    '北京': 'beijing', '天津': 'tianjin', '石家庄': 'shijiazhuang',
+    '太原': 'taiyuan', '呼和浩特': 'huhehaote', '沈阳': 'shenyang',
+    '大连': 'dalian', '长春': 'changchun', '哈尔滨': 'haerbin',
+    '上海': 'shanghai', '南京': 'nanjing', '杭州': 'hangzhou',
+    '宁波': 'ningbo', '合肥': 'hefei', '福州': 'fuzhou', '厦门': 'xiamen',
+    '南昌': 'nanchang', '济南': 'jinan', '青岛': 'qingdao',
+    '郑州': 'zhengzhou', '武汉': 'wuhan', '长沙': 'changsha',
+    '广州': 'guangzhou', '深圳': 'shenzhen', '南宁': 'nanning',
+    '海口': 'haikou', '重庆': 'chongqing', '成都': 'chengdu',
+    '贵阳': 'guiyang', '昆明': 'kunming', '西安': 'xian',
+    '兰州': 'lanzhou', '西宁': 'xining', '银川': 'yinchuan',
+    '乌鲁木齐': 'wulumuqi', '唐山': 'tangshan', '秦皇岛': 'qinhuangdao',
+    '包头': 'baotou', '丹东': 'dandong', '锦州': 'jinzhou',
+    '吉林': 'jilin', '牡丹江': 'mudanjiang', '无锡': 'wuxi',
+    '徐州': 'xuzhou', '扬州': 'yangzhou', '温州': 'wenzhou',
+    '金华': 'jinhua', '蚌埠': 'bengbu', '安庆': 'anqing',
+    '泉州': 'quanzhou', '九江': 'jiujiang', '赣州': 'ganzhou',
+    '烟台': 'yantai', '济宁': 'jining', '洛阳': 'luoyang',
+    '平顶山': 'pingdingshan', '宜昌': 'yichang', '襄阳': 'xiangyang',
+    '岳阳': 'yueyang', '常德': 'changde', '韶关': 'shaoguan',
+    '湛江': 'zhanjiang', '惠州': 'huizhou', '桂林': 'guilin',
+    '北海': 'beihai', '三亚': 'sanya', '泸州': 'luzhou',
+    '南充': 'nanchong', '遵义': 'zunyi', '大理': 'dali',
+}
+
 CITY_NAME_ALIASES = {
     '大理白族自治州': '大理',
     '大理自治州': '大理',

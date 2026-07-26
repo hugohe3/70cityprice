@@ -16,6 +16,7 @@
 - 同屏比较所选城市最新月份的 8 项住宅指数，并点击切换历史趋势
 - 横向比较 70 个城市的最新指数与市场温度
 - 查询单个城市近 12 个月明细，并下载完整 CSV
+- 每个城市另有一页静态汇总（如 [深圳](https://hugohe3.github.io/70cityprice/city/shenzhen/)），无需 JS 即可查看最新读数与近 12 个月明细
 
 网页以 `70cityprice.csv` 为唯一数据源。每次主分支更新后，GitHub Actions 会自动生成紧凑的网页数据并部署到 GitHub Pages，无需重复维护数据副本。
 
@@ -76,13 +77,15 @@
 │   ├── update_70cityprice.py    # 数据更新脚本
 │   ├── validate_70cityprice.py  # 数据质量校验脚本
 │   ├── generate_chart.py        # 图表生成脚本
-│   └── build_site_data.py       # 构建网页专用数据
+│   ├── build_site_data.py       # 构建网页分片数据
+│   └── build_site_pages.py      # 构建 70 城静态页与分享卡片
 ├── assets/                 # 资源文件
 │   └── price_trend.png     # 数据可视化图表
-├── site/                   # GitHub Pages 静态数据浏览器
+├── site/                   # GitHub Pages 站点源文件
 │   ├── index.html
 │   ├── app.js
-│   └── styles.css
+│   ├── styles.css
+│   └── city.css            # 静态城市页样式
 ├── .github/workflows/
 │   └── deploy-pages.yml         # GitHub Pages 自动部署
 └── projects/               # 生成的数据文件（Git忽略，不上传）

@@ -1,0 +1,265 @@
+/* 静态城市页样式。与主站共用同一套设计变量，但不依赖 styles.css，
+   城市页是纯静态内容，不加载 app.js。 */
+
+:root {
+  color-scheme: light;
+  --ink: #1d2623;
+  --muted: #66706b;
+  --paper: #f5f2ea;
+  --card: #fffef9;
+  --line: #d9d7cd;
+  --accent: #d94f31;
+  --teal: #1f6f68;
+  --shadow: 0 24px 70px rgba(40, 48, 43, 0.08);
+  --radius: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 85% 4%, rgba(210, 114, 75, 0.13), transparent 24rem),
+    var(--paper);
+  color: var(--ink);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+}
+
+.site-header,
+main,
+footer {
+  width: min(880px, calc(100% - 40px));
+  margin-inline: auto;
+}
+
+.site-header {
+  display: flex;
+  min-height: 84px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+}
+
+.repository-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-bottom: 1px solid currentColor;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+main {
+  padding-bottom: 4rem;
+}
+
+.breadcrumb {
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.breadcrumb span[aria-hidden] {
+  margin: 0 0.4rem;
+}
+
+h1 {
+  margin: 0.75rem 0 0;
+  font-family: "Songti SC", SimSun, Georgia, serif;
+  font-size: clamp(2.1rem, 6vw, 3.2rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+h2 {
+  margin: 3rem 0 1rem;
+  font-family: "Songti SC", SimSun, Georgia, serif;
+  font-size: clamp(1.35rem, 3.4vw, 1.75rem);
+  font-weight: 600;
+}
+
+.lede {
+  margin: 1.1rem 0 0;
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+
+.headline-grid {
+  display: grid;
+  margin-top: 2rem;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.headline-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.35rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.headline-card span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.headline-card strong {
+  margin-top: 0.4rem;
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.headline-card em {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: normal;
+}
+
+.headline-card.tone-rising strong { color: var(--accent); }
+.headline-card.tone-falling strong { color: var(--teal); }
+
+.cta {
+  margin: 2rem 0 0;
+}
+
+.cta-link {
+  display: inline-block;
+  padding: 0.85rem 1.4rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.cta-link:hover {
+  background: var(--accent);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+
+thead th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+tbody th[scope="row"] {
+  font-weight: 600;
+  text-align: left;
+}
+
+.metric-table td strong {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.metric-table td span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.metric-table td span.tone-rising { color: var(--accent); }
+.metric-table td span.tone-falling { color: var(--teal); }
+
+.note {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.neighbour-list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  list-style: none;
+}
+
+.neighbour-list a {
+  display: inline-block;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.neighbour-list a:hover {
+  border-color: var(--ink);
+}
+
+footer {
+  display: flex;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.82rem;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+footer p {
+  margin: 0;
+}
+
+@media (max-width: 620px) {
+  table {
+    font-size: 0.84rem;
+  }
+
+  th,
+  td {
+    padding: 0.55rem 0.35rem;
+  }
+
+  footer {
+    flex-direction: column;
+  }
+}
