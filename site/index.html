@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="浏览国家统计局 70 个大中城市的新建商品住宅与二手住宅价格指数。">
+  <meta name="theme-color" content="#f5f2ea">
+  <title>70 城房价观察</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="70 城房价观察首页">
+      <span class="brand-mark" aria-hidden="true">70</span>
+      <span>城房价观察</span>
+    </a>
+    <a class="repository-link" href="https://github.com/hugohe3/70cityprice">
+      数据与源码
+      <span aria-hidden="true">↗</span>
+    </a>
+  </header>
+
+  <main id="main-content">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">CHINA HOUSE PRICE INDEX</p>
+        <h1>看懂 70 座城市<br>房价正在怎么变</h1>
+        <p class="hero-summary">
+          国家统计局月度数据，一处浏览新房、二手房的同比与环比走势。
+          选择一座城市，从最新变化看到完整历史。
+        </p>
+        <div class="data-facts" aria-label="数据概览">
+          <span id="data-through">数据加载中</span>
+          <span id="city-coverage">70 个城市</span>
+          <span id="month-coverage">2006 年至今</span>
+        </div>
+      </div>
+
+      <div class="hero-orbit" aria-hidden="true">
+        <div class="orbit-ring orbit-ring-outer"></div>
+        <div class="orbit-ring orbit-ring-inner"></div>
+        <div class="orbit-core">
+          <span>最新覆盖</span>
+          <strong id="hero-month">—</strong>
+        </div>
+        <span class="orbit-label orbit-label-a">北京</span>
+        <span class="orbit-label orbit-label-b">成都</span>
+        <span class="orbit-label orbit-label-c">深圳</span>
+      </div>
+    </section>
+
+    <section class="control-panel" aria-label="数据筛选">
+      <label class="control-field city-control">
+        <span>城市</span>
+        <select id="city-select" aria-label="选择城市"></select>
+      </label>
+
+      <fieldset class="control-field">
+        <legend>住宅类型</legend>
+        <div class="segment-control" id="metric-control">
+          <button type="button" class="active" data-value="new" aria-pressed="true">新建商品住宅</button>
+          <button type="button" data-value="resale" aria-pressed="false">二手住宅</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="control-field">
+        <legend>比较口径</legend>
+        <div class="segment-control compact" id="basis-control">
+          <button type="button" class="active" data-value="yoy" aria-pressed="true">同比</button>
+          <button type="button" data-value="mom" aria-pressed="false">环比</button>
+        </div>
+      </fieldset>
+
+      <label class="control-field range-control">
+        <span>时间范围</span>
+        <select id="range-select" aria-label="选择时间范围">
+          <option value="36">近 3 年</option>
+          <option value="60" selected>近 5 年</option>
+          <option value="120">近 10 年</option>
+          <option value="all">全部</option>
+        </select>
+      </label>
+    </section>
+
+    <div id="page-status" class="page-status" role="status" aria-live="polite">
+      正在整理 70 城数据…
+    </div>
+
+    <div id="dashboard" hidden>
+      <section class="overview-grid" aria-labelledby="overview-title">
+        <article class="chart-card">
+          <div class="section-heading chart-heading">
+            <div>
+              <p class="section-kicker">城市趋势</p>
+              <h2 id="overview-title"><span id="chart-city">北京</span>房价指数</h2>
+            </div>
+            <div class="chart-legend">
+              <span><i class="legend-line"></i><span id="legend-label">新建商品住宅 · 同比</span></span>
+              <span><i class="legend-benchmark"></i>持平线 100</span>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <canvas id="trend-chart" role="img" aria-label="房价指数历史趋势图"></canvas>
+            <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+          </div>
+        </article>
+
+        <aside class="latest-card" aria-labelledby="latest-title">
+          <p class="section-kicker">最新读数</p>
+          <h2 id="latest-title">当前指数</h2>
+          <p id="latest-month" class="latest-month">—</p>
+          <div class="latest-value-row">
+            <strong id="latest-value">—</strong>
+            <span id="latest-status" class="status-pill">—</span>
+          </div>
+          <p id="latest-explanation" class="latest-explanation">正在计算最新变化</p>
+          <dl class="latest-details">
+            <div>
+              <dt>较前一个月读数</dt>
+              <dd id="point-change">—</dd>
+            </div>
+            <div>
+              <dt>近 12 个月极值</dt>
+              <dd id="year-range">—</dd>
+            </div>
+          </dl>
+          <p class="index-note">指数 100 代表与比较期持平，并非房屋价格金额。</p>
+        </aside>
+      </section>
+
+      <section class="market-section" aria-labelledby="market-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">70 城横向观察</p>
+            <h2 id="market-title">最新市场温度</h2>
+          </div>
+          <p id="market-caption" class="section-caption">—</p>
+        </div>
+
+        <div class="temperature-grid">
+          <article class="temperature-card rising">
+            <span>高于 100</span>
+            <strong id="rising-count">—</strong>
+            <p>较比较期上涨</p>
+          </article>
+          <article class="temperature-card flat">
+            <span>等于 100</span>
+            <strong id="flat-count">—</strong>
+            <p>与比较期持平</p>
+          </article>
+          <article class="temperature-card falling">
+            <span>低于 100</span>
+            <strong id="falling-count">—</strong>
+            <p>较比较期下降</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="ranking-section" aria-labelledby="ranking-title">
+        <div class="section-heading ranking-heading">
+          <div>
+            <p class="section-kicker">全部城市</p>
+            <h2 id="ranking-title">70 城最新指数</h2>
+          </div>
+          <label class="search-field">
+            <span class="visually-hidden">搜索城市</span>
+            <input id="city-search" type="search" placeholder="搜索城市…" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">排名</th>
+                <th scope="col">城市</th>
+                <th scope="col">指数</th>
+                <th scope="col">变化</th>
+                <th scope="col">状态</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-body"></tbody>
+          </table>
+        </div>
+        <p id="ranking-empty" class="empty-state" hidden>没有找到匹配的城市。</p>
+      </section>
+
+      <section class="history-section" aria-labelledby="history-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">近期明细</p>
+            <h2 id="history-title"><span id="history-city">北京</span>近 12 个月</h2>
+          </div>
+          <a class="download-link" href="./70cityprice.csv" download>下载完整 CSV</a>
+        </div>
+        <div class="history-grid" id="history-grid"></div>
+      </section>
+
+      <section class="method-section" aria-labelledby="method-title">
+        <p class="section-kicker">如何阅读</p>
+        <h2 id="method-title">这里展示的是价格指数，不是均价</h2>
+        <div class="method-grid">
+          <p><strong>同比</strong>以上年同月为 100，适合观察中长期变化。比如 98.5 表示较上年同月下降约 1.5%。</p>
+          <p><strong>环比</strong>以上月为 100，更灵敏地反映近期变化。比如 100.3 表示较上月上涨约 0.3%。</p>
+          <p><strong>数据来源</strong>为国家统计局。网页数据由仓库主 CSV 自动生成，月度更新后随 GitHub Pages 同步发布。</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <p>70 城房价观察 · 数据来源：国家统计局</p>
+    <p>开放数据与代码采用 MIT License</p>
+  </footer>
+</body>
+</html>

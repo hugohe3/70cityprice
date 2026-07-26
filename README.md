@@ -4,8 +4,19 @@
 [![城市数量](https://img.shields.io/badge/城市-70个大中城市-green)]()
 [![时间跨度](https://img.shields.io/badge/时间跨度-2006至今-orange)]()
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
+[![GitHub Pages](https://github.com/hugohe3/70cityprice/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/hugohe3/70cityprice/actions/workflows/deploy-pages.yml)
 
 🏠 中国国家统计局官方发布的70个大中城市商品住宅销售价格变动数据集，含自动化更新与数据提取工具。
+
+## 🌐 在线浏览
+
+访问 **[70 城房价观察](https://hugohe3.github.io/70cityprice/)**，无需下载文件即可：
+
+- 查看任意一座城市的新建商品住宅、二手住宅同比或环比走势
+- 横向比较 70 个城市的最新指数与市场温度
+- 查询单个城市近 12 个月明细，并下载完整 CSV
+
+网页以 `70cityprice.csv` 为唯一数据源。每次主分支更新后，GitHub Actions 会自动生成紧凑的网页数据并部署到 GitHub Pages，无需重复维护数据副本。
 
 ## ✨ 特点
 
@@ -49,11 +60,18 @@
 ├── LICENSE                 # MIT 许可证
 ├── assets/                 # 资源文件
 │   └── price_trend.png     # 数据可视化图表
+├── site/                   # GitHub Pages 静态数据浏览器
+│   ├── index.html
+│   ├── app.js
+│   └── styles.css
 ├── tools/                  # 工具脚本目录
 │   ├── extract_70cityprice.py   # 数据提取脚本
 │   ├── update_70cityprice.py    # 数据更新脚本
 │   ├── validate_70cityprice.py  # 数据质量校验脚本
-│   └── generate_chart.py        # 图表生成脚本
+│   ├── generate_chart.py        # 图表生成脚本
+│   └── build_site_data.py       # 构建网页专用数据
+├── .github/workflows/
+│   └── deploy-pages.yml         # GitHub Pages 自动部署
 └── projects/               # 生成的数据文件（Git忽略，不上传）
 ```
 
@@ -63,6 +81,8 @@
 | `tools/update_70cityprice.py` | **自动更新脚本** - 从国家统计局网址抓取新数据并追加到CSV |
 | `tools/extract_70cityprice.py` | **数据提取脚本** - 按月份/城市提取数据到新文件 |
 | `tools/validate_70cityprice.py` | **数据校验脚本** - 检查结构、主键、月份连续性和70城覆盖 |
+| `tools/build_site_data.py` | **网页数据构建脚本** - 从主 CSV 生成紧凑的浏览器数据 |
+| `site/` | **静态数据浏览器** - 无前端框架和第三方运行时依赖 |
 | `projects/` | 本地生成的数据文件目录（Git忽略） |
 
 ## 🚀 快速使用
