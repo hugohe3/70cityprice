@@ -14,7 +14,14 @@
 python3 scripts/build_site_data.py
 ```
 
-默认从 [`70cityprice.csv`](../70cityprice.csv) 读，输出到 `site/data/dashboard.json`。可用 `--input` / `--output` 覆盖。
+默认从 [`70cityprice.csv`](../70cityprice.csv) 读，输出到 `site/data/`，可用 `--input` / `--output-dir` 覆盖。产物是两级分片：
+
+| 文件 | 内容 | 体积 |
+|---|---|---|
+| `data/index.json` | 元信息、月份轴、70 城清单、各城最新读数截面 | ~44 KB（gz 7 KB） |
+| `data/series/<adcode>.json` | 单城完整历史序列（2 住宅类型 × 4 面积 × 3 口径） | ~31 KB（gz 7 KB） |
+
+首屏只加载 `index.json` 加当前城市一片，切换城市时按需拉取对应分片并缓存。**不要合并回单文件**——那会让首屏重新背上全部 70 城的历史数据。
 
 本地预览：
 
@@ -24,7 +31,7 @@ python3 -m http.server 8000 --directory site
 
 然后访问 `http://localhost:8000`。
 
-⚠️ `site/data/dashboard.json` **不进仓库**——它由 CI 现场生成。本地跑完记得别把它提交进去（`site/data/` 下只保留 `.gitkeep`）。
+⚠️ `site/data/` 下的产物 **不进仓库**——由 CI 现场生成。本地跑完记得别把 `index.json` 和 `series/` 提交进去（`site/data/` 下只保留 `.gitkeep`）。
 
 ## CI 做的事
 
@@ -32,7 +39,7 @@ python3 -m http.server 8000 --directory site
 
 1. `cp -R site/. _site/` —— 拷静态资源
 2. `cp 70cityprice.csv _site/70cityprice.csv` —— 主 CSV 直接对外提供下载
-3. `python3 scripts/build_site_data.py --output _site/data/dashboard.json` —— 生成紧凑数据
+3. `python3 scripts/build_site_data.py --output-dir _site/data` —— 生成分片数据
 4. 用 `${GITHUB_SHA::12}` 替换 `_site/index.html` 里的 `__BUILD_VERSION__` —— 资源版本号，防止浏览器缓存到旧的 JS/CSS
 5. `touch _site/.nojekyll`
 

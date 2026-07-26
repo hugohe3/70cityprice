@@ -622,6 +622,23 @@ select,
   height: 100%;
 }
 
+.chart-note {
+  margin: 1rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(217, 79, 49, 0.45);
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+
+#dashboard.is-loading .chart-card,
+#dashboard.is-loading .latest-card,
+#dashboard.is-loading .snapshot-section,
+#dashboard.is-loading .history-section {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
 .chart-tooltip {
   position: absolute;
   z-index: 3;

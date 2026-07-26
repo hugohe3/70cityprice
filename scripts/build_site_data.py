@@ -45,10 +45,10 @@ def parse_args() -> argparse.Namespace:
         help='主 CSV 路径',
     )
     parser.add_argument(
-        '--output',
+        '--output-dir',
         type=Path,
-        default=get_repo_root() / 'site' / 'data' / 'dashboard.json',
-        help='网页数据输出路径',
+        default=get_repo_root() / 'site' / 'data',
+        help='网页数据输出目录（生成 index.json 与 series/<adcode>.json）',
     )
     return parser.parse_args()
 
@@ -114,40 +114,92 @@ def read_source(
     return sorted(dates), values
 
 
-def build_payload(
+def build_city_series(
+    adcode: str,
+    city_name: str,
     dates: List[str],
     values: Dict[SeriesKey, Optional[Number]],
 ) -> dict:
+    """构建单个城市的完整序列分片。"""
+    city_series = {}
+    for market, area_columns in MARKET_COLUMNS.items():
+        market_series = {}
+        for area in area_columns:
+            area_series = {}
+            for base in BASE_COLUMNS.values():
+                points = [
+                    values.get((adcode, market, area, base, month))
+                    for month in dates
+                ]
+                if all(point is None for point in points):
+                    raise ValueError(
+                        f'{city_name} 的 {market}/{area}/{base} 没有可用数据'
+                    )
+                area_series[base] = points
+            market_series[area] = area_series
+        city_series[market] = market_series
+    return city_series
+
+
+def summarize_latest(points: List[Optional[Number]]) -> Optional[List]:
+    """取最后一个有值的读数及其与前一个有值读数的差，返回 [值, 变化, 月份下标]。"""
+    latest_index = next(
+        (i for i in range(len(points) - 1, -1, -1) if points[i] is not None),
+        None,
+    )
+    if latest_index is None:
+        return None
+
+    previous_index = next(
+        (i for i in range(latest_index - 1, -1, -1) if points[i] is not None),
+        None,
+    )
+    change = (
+        None
+        if previous_index is None
+        else round(points[latest_index] - points[previous_index], 2)
+    )
+    return [points[latest_index], change, latest_index]
+
+
+def build_index(
+    dates: List[str],
+    series_by_city: Dict[str, dict],
+) -> dict:
+    """构建首屏骨架：元信息、月份轴、城市清单、各城最新读数截面。"""
     cities = [
         {'name': city, 'adcode': adcode}
         for city, adcode in CITY_ADCODE.items()
     ]
-    series = {}
+    latest: Dict[str, dict] = {}
+    latest_index_by_basis: Dict[str, int] = {}
 
-    for city in cities:
-        adcode = city['adcode']
-        city_series = {}
+    for adcode, city_series in series_by_city.items():
+        city_latest = {}
         for market, area_columns in MARKET_COLUMNS.items():
-            market_series = {}
+            market_latest = {}
             for area in area_columns:
-                area_series = {}
+                area_latest = {}
                 for base in BASE_COLUMNS.values():
-                    points = [
-                        values.get((adcode, market, area, base, month))
-                        for month in dates
-                    ]
-                    if all(point is None for point in points):
-                        raise ValueError(
-                            f"{city['name']} 的 "
-                            f"{market}/{area}/{base} 没有可用数据"
-                        )
-                    area_series[base] = points
-                market_series[area] = area_series
-            city_series[market] = market_series
-        series[adcode] = city_series
+                    summary = summarize_latest(city_series[market][area][base])
+                    if summary is None:
+                        continue
+                    area_latest[base] = summary[:2]
+                    latest_index_by_basis[base] = max(
+                        latest_index_by_basis.get(base, -1), summary[2]
+                    )
+                market_latest[area] = area_latest
+            city_latest[market] = market_latest
+        latest[adcode] = city_latest
+
+    # 各口径的数据终止月份并不相同：定基比 2023 年起停发，
+    # 直接用 endMonth 标注定基截面会把 2022 年的读数标成最新月份。
+    latest_month_by_basis = {
+        base: dates[index] for base, index in latest_index_by_basis.items()
+    }
 
     return {
-        'schemaVersion': 2,
+        'schemaVersion': 3,
         'meta': {
             'source': '国家统计局',
             'startMonth': dates[0],
@@ -161,27 +213,48 @@ def build_payload(
                 for area_columns in MARKET_COLUMNS.values()
             ),
             'basisCount': len(BASE_COLUMNS),
+            'latestMonthByBasis': latest_month_by_basis,
         },
         'dates': dates,
         'cities': cities,
-        'series': series,
+        'latest': latest,
     }
+
+
+def write_json(path: Path, payload: dict) -> int:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + '\n'
+    path.write_text(text, encoding='utf-8')
+    return len(text.encode('utf-8'))
 
 
 def main() -> None:
     args = parse_args()
     dates, values = read_source(args.input)
-    payload = build_payload(dates, values)
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + '\n',
-        encoding='utf-8',
+    series_by_city = {
+        adcode: build_city_series(adcode, city, dates, values)
+        for city, adcode in CITY_ADCODE.items()
+    }
+
+    index_payload = build_index(dates, series_by_city)
+    index_bytes = write_json(args.output_dir / 'index.json', index_payload)
+
+    series_bytes = 0
+    for adcode, city_series in series_by_city.items():
+        series_bytes += write_json(
+            args.output_dir / 'series' / f'{adcode}.json', city_series
+        )
+
+    print(
+        f'网页数据已生成: {args.output_dir} '
+        f"({index_payload['meta']['cityCount']} 城市, "
+        f"{index_payload['meta']['monthCount']} 个月)"
     )
     print(
-        f"网页数据已生成: {args.output} "
-        f"({payload['meta']['cityCount']} 城市, "
-        f"{payload['meta']['monthCount']} 个月)"
+        f'  index.json {index_bytes / 1024:.1f} KB · '
+        f'series/ {len(series_by_city)} 个分片，'
+        f'平均 {series_bytes / len(series_by_city) / 1024:.1f} KB'
     )
 
 

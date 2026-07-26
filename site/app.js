@@ -29,8 +29,18 @@ const BASES = {
 
 const DEFAULT_CITY_ADCODE = "110100";
 
+// 定基/累计口径的分段边界。基期约每五年轮换一次，2023 年起改为年内累计同比、
+// 每年 1 月重置，因此这些边界两侧的数值不可直接连成一条序列。
+const FIXED_BASE_SEGMENTS = [
+  { start: "2011-01", end: "2015-12", label: "2010年=100" },
+  { start: "2016-01", end: "2020-12", label: "2015年=100" },
+  { start: "2021-01", end: "2022-12", label: "2020年=100" },
+];
+const CUMULATIVE_BASIS_START = "2023-01";
+
 const state = {
   data: null,
+  series: new Map(),
   city: DEFAULT_CITY_ADCODE,
   market: "new",
   area: "all",
@@ -43,6 +53,8 @@ const elements = {};
 let chartModel = null;
 let resizeFrame = null;
 let activeCityOptionIndex = -1;
+let buildVersion = "dev";
+let pendingCityToken = 0;
 
 document.addEventListener("DOMContentLoaded", initialize);
 
@@ -50,17 +62,13 @@ async function initialize() {
   try {
     cacheElements();
     bindEvents();
-    const buildVersion = document.documentElement.dataset.buildVersion || "dev";
-    const response = await fetch(
-      `./data/dashboard.json?v=${encodeURIComponent(buildVersion)}`,
-    );
-    if (!response.ok) {
-      throw new Error(`数据请求失败 (${response.status})`);
-    }
+    buildVersion = document.documentElement.dataset.buildVersion || "dev";
 
-    state.data = await response.json();
+    state.data = await fetchJson("./data/index.json");
     validateData(state.data);
     applyUrlState();
+    // 首屏只需骨架加当前城市一片，其余 69 城按需加载。
+    await loadCitySeries(state.city);
     initializeCityPicker();
     elements.dashboard.hidden = false;
     renderAll();
@@ -74,11 +82,29 @@ async function initialize() {
   }
 }
 
+async function fetchJson(path) {
+  const response = await fetch(`${path}?v=${encodeURIComponent(buildVersion)}`);
+  if (!response.ok) {
+    throw new Error(`数据请求失败 (${response.status})`);
+  }
+  return response.json();
+}
+
+async function loadCitySeries(adcode) {
+  const cached = state.series.get(adcode);
+  if (cached) return cached;
+
+  const series = await fetchJson(`./data/series/${adcode}.json`);
+  state.series.set(adcode, series);
+  return series;
+}
+
 function cacheElements() {
   const ids = [
     "area-control",
     "basis-control",
     "chart-city",
+    "chart-note",
     "chart-tooltip",
     "city-coverage",
     "city-input",
@@ -228,10 +254,10 @@ function bindEvents() {
 
 function validateData(data) {
   if (
-    data.schemaVersion !== 2 ||
+    data.schemaVersion !== 3 ||
     !Array.isArray(data.dates) ||
     !Array.isArray(data.cities) ||
-    typeof data.series !== "object"
+    typeof data.latest !== "object"
   ) {
     throw new Error("网页数据格式不受支持");
   }
@@ -245,7 +271,7 @@ function applyUrlState() {
   const basis = params.get("basis");
   const range = params.get("range");
 
-  if (city && state.data.series[city]) state.city = city;
+  if (city && state.data.latest[city]) state.city = city;
   if (market && MARKETS[market]) state.market = market;
   if (area && AREAS[area]) state.area = area;
   if (basis && BASES[basis]) state.basis = basis;
@@ -370,14 +396,36 @@ function updateActiveCityOption(options) {
   activeOption.scrollIntoView({ block: "nearest" });
 }
 
-function selectCity(adcode, options = {}) {
+async function selectCity(adcode, options = {}) {
   state.city = adcode;
   elements.cityInput.value = getSelectedCity().name;
   closeCityOptions();
-  renderCityViews();
   syncUrl();
   if (options.scrollToOverview) {
     document.querySelector(".overview-grid").scrollIntoView({ behavior: "smooth" });
+  }
+
+  if (state.series.has(adcode)) {
+    renderCityViews();
+    return;
+  }
+
+  // 分片按需加载：只渲染最后一次选择的结果，避免快速连点时旧响应覆盖新城市。
+  const token = (pendingCityToken += 1);
+  elements.dashboard.classList.add("is-loading");
+  try {
+    await loadCitySeries(adcode);
+    if (token !== pendingCityToken) return;
+    renderCityViews();
+  } catch (error) {
+    if (token !== pendingCityToken) return;
+    elements.status.hidden = false;
+    elements.status.textContent = `无法加载${getSelectedCity().name}的数据：${error.message}`;
+    elements.status.classList.add("error");
+  } finally {
+    if (token === pendingCityToken) {
+      elements.dashboard.classList.remove("is-loading");
+    }
   }
 }
 
@@ -406,6 +454,7 @@ function renderCityViews() {
   elements.historyCity.textContent = city.name;
   elements.snapshotCity.textContent = city.name;
   elements.legendLabel.textContent = `${getMetricLabel()} · ${BASES[state.basis].label}`;
+  renderChartNote();
   renderChart();
   renderLatest();
   renderSnapshot();
@@ -417,12 +466,58 @@ function getSelectedCity() {
 }
 
 function getSeries(adcode = state.city) {
-  return state.data.series[adcode][state.market][state.area][state.basis];
+  const series = state.series.get(adcode);
+  return series[state.market][state.area][state.basis];
+}
+
+function getLatestMonth() {
+  // 三种口径的数据终止月份可能不同，不能一律用 meta.endMonth。
+  const byBasis = state.data.meta.latestMonthByBasis || {};
+  return byBasis[state.basis] || state.data.meta.endMonth;
 }
 
 function getMetricLabel() {
   const area = state.area === "all" ? "" : ` · ${AREAS[state.area]}`;
   return `${MARKETS[state.market]}${area}`;
+}
+
+// 同比与环比是连续序列；定基/累计不是，必须按基期分段，
+// 跨段的两个点之间不存在可比关系，不能连线。
+function getSegmentLabel(month) {
+  if (state.basis !== "fixed") return "";
+
+  const segment = FIXED_BASE_SEGMENTS.find(
+    (item) => month >= item.start && month <= item.end,
+  );
+  if (segment) return segment.label;
+  if (month >= CUMULATIVE_BASIS_START) return `${month.slice(0, 4)} 年内累计`;
+  return "";
+}
+
+function groupIntoSegments(points) {
+  const segments = [];
+  points.forEach((point, index) => {
+    const label = getSegmentLabel(point.date);
+    const current = segments.at(-1);
+    if (current && current.label === label) current.indices.push(index);
+    else segments.push({ label, short: shortenSegmentLabel(label), indices: [index] });
+  });
+  return segments;
+}
+
+// 年内累计的分段每年一小段，横向空间很窄，只标年份。
+function shortenSegmentLabel(label) {
+  return label.endsWith("年内累计") ? label.slice(0, 4) : label;
+}
+
+function renderChartNote() {
+  const isFixed = state.basis === "fixed";
+  elements.chartNote.hidden = !isFixed;
+  if (!isFixed) return;
+
+  elements.chartNote.textContent =
+    "定基基期约每五年轮换一次（2010 → 2015 → 2020），2023 年起改为年内累计同比、每年 1 月重置。" +
+    "虚线处两侧属于不同基期，数值不可直接比较，因此不连线。";
 }
 
 function renderLatest() {
@@ -465,9 +560,8 @@ function buildIndexExplanation(movement) {
 
 function renderSnapshot() {
   const fragment = document.createDocumentFragment();
-  const latestMonth = state.data.meta.endMonth;
 
-  elements.snapshotMonth.textContent = formatMonth(latestMonth);
+  elements.snapshotMonth.textContent = formatMonth(getLatestMonth());
   elements.snapshotBasis.textContent = `${BASES[state.basis].label}口径`;
 
   Object.entries(MARKETS).forEach(([market, marketLabel]) => {
@@ -496,7 +590,7 @@ function renderSnapshot() {
 }
 
 function buildSnapshotMetric(market, area, areaLabel) {
-  const values = state.data.series[state.city][market][area][state.basis];
+  const values = state.series.get(state.city)[market][area][state.basis];
   const latestIndex = findLastValueIndex(values);
   const previousIndex = findPreviousValueIndex(values, latestIndex);
   const value = latestIndex >= 0 ? values[latestIndex] : null;
@@ -538,7 +632,7 @@ function buildSnapshotMetric(market, area, areaLabel) {
 }
 
 function renderMarket() {
-  const latestMonth = state.data.meta.endMonth;
+  const latestMonth = getLatestMonth();
   const rows = buildRankingRows();
   const counts = rows.reduce(
     (result, row) => {
@@ -556,17 +650,16 @@ function renderMarket() {
 }
 
 function buildRankingRows() {
+  // 排行榜只需要每城的最新读数，直接读骨架里预计算的截面，
+  // 不必为了排序把 70 城的完整序列都下载下来。
   return state.data.cities
     .map((city) => {
-      const series = getSeries(city.adcode);
-      const latestIndex = findLastValueIndex(series);
-      const previousIndex = findPreviousValueIndex(series, latestIndex);
-      const value = series[latestIndex];
-      const previous = previousIndex >= 0 ? series[previousIndex] : null;
+      const summary =
+        state.data.latest[city.adcode]?.[state.market]?.[state.area]?.[state.basis];
       return {
         ...city,
-        value,
-        change: previous === null ? null : value - previous,
+        value: summary ? summary[0] : null,
+        change: summary ? summary[1] : null,
       };
     })
     .filter((row) => isNumber(row.value))
@@ -687,18 +780,34 @@ function renderChart() {
 
   drawChartGrid(context, width, padding, plotWidth, plotHeight, yMin, yMax, yFor);
 
-  context.beginPath();
-  points.forEach((point, index) => {
-    const x = xFor(index);
-    const y = yFor(point.value);
-    if (index === 0) context.moveTo(x, y);
-    else context.lineTo(x, y);
-  });
+  const segments = groupIntoSegments(points);
+  if (segments.length > 1) {
+    drawSegmentBreaks(context, segments, points, xFor, padding, plotHeight);
+  }
+
   context.strokeStyle = "#d94f31";
+  context.fillStyle = "#d94f31";
   context.lineWidth = 2.5;
   context.lineJoin = "round";
   context.lineCap = "round";
-  context.stroke();
+  segments.forEach((segment) => {
+    if (segment.indices.length === 1) {
+      const only = segment.indices[0];
+      context.beginPath();
+      context.arc(xFor(only), yFor(points[only].value), 2.5, 0, Math.PI * 2);
+      context.fill();
+      return;
+    }
+
+    context.beginPath();
+    segment.indices.forEach((pointIndex, order) => {
+      const x = xFor(pointIndex);
+      const y = yFor(points[pointIndex].value);
+      if (order === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    });
+    context.stroke();
+  });
 
   const lastPoint = points.at(-1);
   context.beginPath();
@@ -726,8 +835,47 @@ function renderChart() {
   canvas.setAttribute(
     "aria-label",
     `${getSelectedCity().name}${getMetricLabel()}${BASES[state.basis].label}指数，` +
-    `${formatMonth(points[0].date)}至${formatMonth(lastPoint.date)}，最新值${formatIndex(lastPoint.value)}`,
+    `${formatMonth(points[0].date)}至${formatMonth(lastPoint.date)}，最新值${formatIndex(lastPoint.value)}` +
+    (segments.length > 1
+      ? `。因基期轮换分为 ${segments.length} 段绘制，段间不可比。`
+      : ""),
   );
+}
+
+// 在基期切换处画竖向断点并标注各段基期，让"这里不可比"在图上直接可见。
+function drawSegmentBreaks(context, segments, points, xFor, padding, plotHeight) {
+  const top = padding.top;
+  const bottom = padding.top + plotHeight;
+
+  context.save();
+  context.setLineDash([3, 4]);
+  context.strokeStyle = "rgba(120, 108, 92, 0.55)";
+  context.lineWidth = 1;
+  for (let index = 1; index < segments.length; index += 1) {
+    const previousEnd = segments[index - 1].indices.at(-1);
+    const currentStart = segments[index].indices[0];
+    const x = (xFor(previousEnd) + xFor(currentStart)) / 2;
+    context.beginPath();
+    context.moveTo(x, top);
+    context.lineTo(x, bottom);
+    context.stroke();
+  }
+  context.restore();
+
+  context.save();
+  context.font = '10px "PingFang SC", sans-serif';
+  context.fillStyle = "rgba(94, 84, 70, 0.85)";
+  context.textAlign = "center";
+  context.textBaseline = "top";
+  segments.forEach((segment) => {
+    if (!segment.short) return;
+    const left = xFor(segment.indices[0]);
+    const right = xFor(segment.indices.at(-1));
+    const width = context.measureText(segment.short).width;
+    if (right - left < width + 8) return;
+    context.fillText(segment.short, (left + right) / 2, top + 2);
+  });
+  context.restore();
 }
 
 function drawChartGrid(context, width, padding, plotWidth, plotHeight, yMin, yMax, yFor) {

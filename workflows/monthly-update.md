@@ -51,7 +51,7 @@ python3 scripts/generate_chart.py
 
 GitHub Actions 在 push 到 main 后会自动构建并部署，**正常情况下本地不需要手工跑**。只在需要本地预览或调试构建时才执行 [`site-build.md`](site-build.md)。
 
-注意 `site/data/dashboard.json` 不进仓库，靠 CI 现场生成——不要手工提交它。
+注意 `site/data/` 下的 `index.json` 与 `series/` 不进仓库，靠 CI 现场生成——不要手工提交它们。
 
 ### 6. 提交
 

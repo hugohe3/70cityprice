@@ -66,6 +66,7 @@ Desktop.ini
 
 # GitHub Pages 本地构建数据（由主 CSV 自动生成）
 site/data/*.json
+site/data/series/
 _site/
 
 # ------------------------------------------
