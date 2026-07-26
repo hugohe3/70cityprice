@@ -27,9 +27,11 @@ const BASES = {
   },
 };
 
+const DEFAULT_CITY_ADCODE = "110100";
+
 const state = {
   data: null,
-  city: "110100",
+  city: DEFAULT_CITY_ADCODE,
   market: "new",
   area: "all",
   basis: "yoy",
@@ -45,11 +47,13 @@ let activeCityOptionIndex = -1;
 document.addEventListener("DOMContentLoaded", initialize);
 
 async function initialize() {
-  cacheElements();
-  bindEvents();
-
   try {
-    const response = await fetch("./data/dashboard.json");
+    cacheElements();
+    bindEvents();
+    const buildVersion = document.documentElement.dataset.buildVersion || "dev";
+    const response = await fetch(
+      `./data/dashboard.json?v=${encodeURIComponent(buildVersion)}`,
+    );
     if (!response.ok) {
       throw new Error(`数据请求失败 (${response.status})`);
     }
@@ -62,8 +66,11 @@ async function initialize() {
     renderAll();
     elements.status.hidden = true;
   } catch (error) {
-    elements.status.textContent = `暂时无法加载数据：${error.message}`;
-    elements.status.classList.add("error");
+    const status = elements.status || document.getElementById("page-status");
+    if (status) {
+      status.textContent = `暂时无法加载数据：${error.message}`;
+      status.classList.add("error");
+    }
   }
 }
 
@@ -77,6 +84,7 @@ function cacheElements() {
     "city-input",
     "city-options",
     "city-search",
+    "city-toggle",
     "dashboard",
     "data-through",
     "falling-count",
@@ -106,6 +114,10 @@ function cacheElements() {
     const key = id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
     elements[key] = document.getElementById(id);
   });
+  const missingIds = ids.filter((id) => !document.getElementById(id));
+  if (missingIds.length) {
+    throw new Error("页面资源版本不一致，请刷新页面");
+  }
   elements.status = elements.pageStatus;
   elements.dashboard = document.getElementById("dashboard");
 }
@@ -130,6 +142,13 @@ function bindEvents() {
   });
 
   elements.cityInput.addEventListener("keydown", handleCityInputKeydown);
+  elements.cityToggle.addEventListener("click", () => {
+    if (elements.cityOptions.hidden) {
+      elements.cityInput.focus();
+    } else {
+      closeCityOptions();
+    }
+  });
   elements.cityOptions.addEventListener("click", (event) => {
     const option = event.target.closest("[data-adcode]");
     if (option) selectCity(option.dataset.adcode);
@@ -269,11 +288,13 @@ function renderCityOptions(query) {
   elements.cityOptions.replaceChildren(fragment);
   elements.cityOptions.hidden = false;
   elements.cityInput.setAttribute("aria-expanded", "true");
+  elements.cityToggle.setAttribute("aria-expanded", "true");
 }
 
 function closeCityOptions() {
   elements.cityOptions.hidden = true;
   elements.cityInput.setAttribute("aria-expanded", "false");
+  elements.cityToggle.setAttribute("aria-expanded", "false");
   elements.cityInput.removeAttribute("aria-activedescendant");
   activeCityOptionIndex = -1;
 }

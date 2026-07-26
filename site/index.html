@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-build-version="__BUILD_VERSION__">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="浏览国家统计局 70 个大中城市的新建商品住宅与二手住宅价格指数。">
   <meta name="theme-color" content="#f5f2ea">
   <title>70 城房价观察</title>
-  <link rel="stylesheet" href="./styles.css">
-  <script src="./app.js" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=__BUILD_VERSION__">
+  <script src="./app.js?v=__BUILD_VERSION__" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要内容</a>
@@ -66,6 +66,14 @@
             autocomplete="off"
             placeholder="搜索城市"
           >
+          <button
+            id="city-toggle"
+            class="city-toggle"
+            type="button"
+            aria-label="展开全部城市"
+            aria-controls="city-options"
+            aria-expanded="false"
+          >⌄</button>
           <div id="city-options" class="city-options" role="listbox" hidden></div>
         </div>
       </div>

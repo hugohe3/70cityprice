@@ -338,13 +338,37 @@ select,
 }
 
 .city-picker input {
-  padding-right: 0.8rem;
+  padding-right: 2.8rem;
   outline: none;
 }
 
 .city-picker input:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(31, 111, 104, 0.12);
+}
+
+.city-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.15rem;
+  transform: translateY(-50%);
+}
+
+.city-toggle:hover,
+.city-toggle:focus-visible {
+  background: #e9e6dd;
+  color: var(--ink);
+  outline: none;
 }
 
 .city-options {
