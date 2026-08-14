@@ -29,6 +29,19 @@ const BASES = {
 
 const DEFAULT_CITY_ADCODE = "110100";
 
+// canvas 无法读 CSS 变量，这里的取值须与 styles.css 的调色板保持一致。
+const CHART_COLORS = {
+  line: "#0f6e63",
+  surface: "#ffffff",
+  grid: "#eef1f0",
+  benchmark: "#b3bdbc",
+  divider: "rgba(18, 24, 28, 0.28)",
+  axis: "#8a969a",
+  axisStrong: "#5c6b70",
+};
+const CHART_FONT = '"SF Mono", ui-monospace, Menlo, Consolas, monospace';
+const NICE_STEPS = [0.2, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50];
+
 // 定基/累计口径的分段边界。基期约每五年轮换一次，2023 年起改为年内累计同比、
 // 每年 1 月重置，因此这些边界两侧的数值不可直接连成一条序列。
 const FIXED_BASE_SEGMENTS = [
@@ -113,7 +126,9 @@ function cacheElements() {
     "city-toggle",
     "dashboard",
     "data-through",
+    "falling-bar",
     "falling-count",
+    "flat-bar",
     "flat-count",
     "hero-month",
     "history-city",
@@ -131,6 +146,7 @@ function cacheElements() {
     "range-select",
     "ranking-body",
     "ranking-empty",
+    "rising-bar",
     "rising-count",
     "snapshot-basis",
     "snapshot-city",
@@ -431,13 +447,12 @@ async function selectCity(adcode, options = {}) {
 
 function renderAll() {
   const { meta } = state.data;
-  const startYear = meta.startMonth.slice(0, 4);
-  const endLabel = formatMonth(meta.endMonth);
-
-  elements.dataThrough.textContent = `数据截至 ${endLabel}`;
-  elements.cityCoverage.textContent = `${meta.cityCount} 个城市`;
-  elements.monthCoverage.textContent = `${startYear} 年至今 · ${meta.monthCount} 个月`;
-  elements.heroMonth.textContent = meta.endMonth.replace("-", ".");
+  elements.dataThrough.textContent = formatMonth(meta.endMonth);
+  elements.cityCoverage.textContent = `${meta.cityCount} 个`;
+  elements.monthCoverage.textContent =
+    `${meta.startMonth.replace("-", ".")} – ${meta.endMonth.replace("-", ".")}` +
+    ` · ${meta.monthCount} 个月`;
+  elements.heroMonth.textContent = `更新至 ${meta.endMonth.replace("-", ".")}`;
   renderAllViews();
 }
 
@@ -645,6 +660,14 @@ function renderMarket() {
   elements.risingCount.textContent = counts.rising;
   elements.flatCount.textContent = counts.flat;
   elements.fallingCount.textContent = counts.falling;
+
+  // 占比条：三段宽度按城市数分配，比三个孤立的数字更快读出比例。
+  const total = counts.rising + counts.flat + counts.falling;
+  const share = (count) => (total ? `${(count / total) * 100}%` : "0%");
+  elements.risingBar.style.width = share(counts.rising);
+  elements.flatBar.style.width = share(counts.flat);
+  elements.fallingBar.style.width = share(counts.falling);
+
   elements.marketCaption.textContent =
     `${formatMonth(latestMonth)} · ${getMetricLabel()} · ${BASES[state.basis].label}指数`;
 }
@@ -772,22 +795,21 @@ function renderChart() {
   const plotHeight = height - padding.top - padding.bottom;
   const rawMin = Math.min(100, ...points.map((point) => point.value));
   const rawMax = Math.max(100, ...points.map((point) => point.value));
-  const spread = Math.max(rawMax - rawMin, 2);
-  const yMin = Math.floor((rawMin - spread * 0.14) * 2) / 2;
-  const yMax = Math.ceil((rawMax + spread * 0.14) * 2) / 2;
+  const scale = niceScale(rawMin, rawMax);
+  const { min: yMin, max: yMax } = scale;
   const xFor = (index) => padding.left + (index / (points.length - 1)) * plotWidth;
   const yFor = (value) => padding.top + ((yMax - value) / (yMax - yMin)) * plotHeight;
 
-  drawChartGrid(context, width, padding, plotWidth, plotHeight, yMin, yMax, yFor);
+  drawChartGrid(context, width, padding, plotWidth, plotHeight, scale, yFor);
 
   const segments = groupIntoSegments(points);
   if (segments.length > 1) {
     drawSegmentBreaks(context, segments, points, xFor, padding, plotHeight);
   }
 
-  context.strokeStyle = "#d94f31";
-  context.fillStyle = "#d94f31";
-  context.lineWidth = 2.5;
+  context.strokeStyle = CHART_COLORS.line;
+  context.fillStyle = CHART_COLORS.line;
+  context.lineWidth = 2;
   context.lineJoin = "round";
   context.lineCap = "round";
   segments.forEach((segment) => {
@@ -811,11 +833,11 @@ function renderChart() {
 
   const lastPoint = points.at(-1);
   context.beginPath();
-  context.arc(xFor(points.length - 1), yFor(lastPoint.value), 4, 0, Math.PI * 2);
-  context.fillStyle = "#fffef9";
+  context.arc(xFor(points.length - 1), yFor(lastPoint.value), 3.5, 0, Math.PI * 2);
+  context.fillStyle = CHART_COLORS.surface;
   context.fill();
-  context.lineWidth = 2.5;
-  context.strokeStyle = "#d94f31";
+  context.lineWidth = 2;
+  context.strokeStyle = CHART_COLORS.line;
   context.stroke();
 
   drawXAxis(context, points, padding, plotWidth, height);
@@ -849,7 +871,7 @@ function drawSegmentBreaks(context, segments, points, xFor, padding, plotHeight)
 
   context.save();
   context.setLineDash([3, 4]);
-  context.strokeStyle = "rgba(120, 108, 92, 0.55)";
+  context.strokeStyle = CHART_COLORS.divider;
   context.lineWidth = 1;
   for (let index = 1; index < segments.length; index += 1) {
     const previousEnd = segments[index - 1].indices.at(-1);
@@ -863,8 +885,8 @@ function drawSegmentBreaks(context, segments, points, xFor, padding, plotHeight)
   context.restore();
 
   context.save();
-  context.font = '10px "PingFang SC", sans-serif';
-  context.fillStyle = "rgba(94, 84, 70, 0.85)";
+  context.font = `10px ${CHART_FONT}`;
+  context.fillStyle = CHART_COLORS.axisStrong;
   context.textAlign = "center";
   context.textBaseline = "top";
   segments.forEach((segment) => {
@@ -878,45 +900,60 @@ function drawSegmentBreaks(context, segments, points, xFor, padding, plotHeight)
   context.restore();
 }
 
-function drawChartGrid(context, width, padding, plotWidth, plotHeight, yMin, yMax, yFor) {
-  const tickCount = 5;
-  context.font = '11px "PingFang SC", sans-serif';
-  context.textAlign = "right";
-  context.textBaseline = "middle";
+// 刻度取整：步长只从 NICE_STEPS 里选，避免出现 104.9 / 101.8 这类读不动的刻度值。
+function niceScale(min, max) {
+  const spread = Math.max(max - min, 1);
+  const low = min - spread * 0.14;
+  const high = max + spread * 0.14;
 
-  for (let tick = 0; tick <= tickCount; tick += 1) {
-    const value = yMin + ((yMax - yMin) * tick) / tickCount;
-    const y = yFor(value);
-    context.beginPath();
-    context.moveTo(padding.left, y);
-    context.lineTo(padding.left + plotWidth, y);
-    context.strokeStyle = Math.abs(value - 100) < (yMax - yMin) / tickCount / 2
-      ? "#9e9b91"
-      : "#e5e2d9";
-    context.lineWidth = 1;
-    context.setLineDash(value === 100 ? [5, 5] : []);
-    context.stroke();
-    context.setLineDash([]);
-    context.fillStyle = "#7b817d";
-    context.fillText(formatIndex(value), padding.left - 8, y);
+  for (const step of NICE_STEPS) {
+    const scaleMin = Math.floor(low / step) * step;
+    const scaleMax = Math.ceil(high / step) * step;
+    if ((scaleMax - scaleMin) / step <= 6) {
+      return { min: round2(scaleMin), max: round2(scaleMax), step };
+    }
   }
 
-  if (yMin < 100 && yMax > 100) {
-    const benchmarkY = yFor(100);
+  const step = NICE_STEPS.at(-1);
+  return {
+    min: round2(Math.floor(low / step) * step),
+    max: round2(Math.ceil(high / step) * step),
+    step,
+  };
+}
+
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function drawChartGrid(context, width, padding, plotWidth, plotHeight, scale, yFor) {
+  context.font = `10px ${CHART_FONT}`;
+  context.textAlign = "right";
+  context.textBaseline = "middle";
+  context.lineWidth = 1;
+
+  for (let value = scale.min; value <= scale.max + scale.step / 2; value += scale.step) {
+    const tickValue = round2(value);
+    const y = Math.round(yFor(tickValue)) + 0.5;
+    const isBenchmark = Math.abs(tickValue - 100) < 0.001;
+
     context.beginPath();
-    context.moveTo(padding.left, benchmarkY);
-    context.lineTo(width - padding.right, benchmarkY);
-    context.strokeStyle = "#85877f";
-    context.setLineDash([5, 5]);
+    context.moveTo(padding.left, y);
+    context.lineTo(width - padding.right, y);
+    context.strokeStyle = isBenchmark ? CHART_COLORS.benchmark : CHART_COLORS.grid;
+    context.setLineDash(isBenchmark ? [4, 4] : []);
     context.stroke();
     context.setLineDash([]);
+
+    context.fillStyle = isBenchmark ? CHART_COLORS.axisStrong : CHART_COLORS.axis;
+    context.fillText(formatIndex(tickValue), padding.left - 8, y);
   }
 }
 
 function drawXAxis(context, points, padding, plotWidth, height) {
   const labelCount = Math.min(5, points.length);
-  context.fillStyle = "#7b817d";
-  context.font = '11px "PingFang SC", sans-serif';
+  context.fillStyle = CHART_COLORS.axis;
+  context.font = `10px ${CHART_FONT}`;
   context.textBaseline = "bottom";
 
   for (let index = 0; index < labelCount; index += 1) {

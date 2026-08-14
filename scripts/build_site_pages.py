@@ -230,7 +230,7 @@ def render_city_page(
   <title>{esc(title)}</title>
   <meta name="description" content="{esc(description)}">
   <link rel="canonical" href="{canonical}">
-  <meta name="theme-color" content="#f5f2ea">
+  <meta name="theme-color" content="#f7f8f7">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="70 城房价观察">
   <meta property="og:title" content="{esc(title)}">
@@ -395,21 +395,21 @@ def render_og_images(site_dir: Path, values, dates, cities: List[str], latest_mo
 
     def draw(path: Path, title: str, subtitle: str, points: List[Optional[float]]) -> None:
         figure = plt.figure(figsize=(12, 6.3), dpi=100)
-        figure.patch.set_facecolor('#f5f2ea')
+        figure.patch.set_facecolor('#f7f8f7')
 
-        figure.text(0.06, 0.86, '70 城房价观察', fontsize=20, color='#d94f31', weight='bold')
-        figure.text(0.06, 0.68, title, fontsize=52, color='#1d2623', weight='bold')
-        figure.text(0.06, 0.56, subtitle, fontsize=22, color='#5e5446')
+        figure.text(0.06, 0.86, '70 城房价观察', fontsize=20, color='#0f6e63', weight='bold')
+        figure.text(0.06, 0.68, title, fontsize=52, color='#12181c', weight='bold')
+        figure.text(0.06, 0.56, subtitle, fontsize=22, color='#5c6b70')
         figure.text(0.06, 0.07, '数据来源：国家统计局 · hugohe3.github.io/70cityprice',
-                    fontsize=15, color='#8a7f70')
+                    fontsize=15, color='#8a969a')
 
         axes = figure.add_axes([0.06, 0.18, 0.88, 0.32])
-        axes.set_facecolor('#f5f2ea')
+        axes.set_facecolor('#f7f8f7')
         recent = [(i, v) for i, v in enumerate(points[-60:]) if v is not None]
         if len(recent) > 1:
             axes.plot([i for i, _ in recent], [v for _, v in recent],
-                      color='#d94f31', linewidth=3)
-            axes.axhline(100, color='#b9ada0', linewidth=1, linestyle='--')
+                      color='#0f6e63', linewidth=3)
+            axes.axhline(100, color='#b3bdbc', linewidth=1, linestyle='--')
         for spine in axes.spines.values():
             spine.set_visible(False)
         axes.set_xticks([])

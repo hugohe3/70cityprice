@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="浏览国家统计局 70 个大中城市的新建商品住宅与二手住宅价格指数。">
-  <meta name="theme-color" content="#f5f2ea">
+  <meta name="theme-color" content="#f7f8f7">
   <title>70 城房价观察</title>
   <!--__OG_TAGS__-->
   <link rel="stylesheet" href="./styles.css?v=__BUILD_VERSION__">
@@ -16,7 +16,7 @@
   <header class="site-header">
     <a class="brand" href="./" aria-label="70 城房价观察首页">
       <span class="brand-mark" aria-hidden="true">70</span>
-      <span>城房价观察</span>
+      <span class="brand-name">城房价观察</span>
     </a>
     <a class="repository-link" href="https://github.com/hugohe3/70cityprice">
       数据与源码
@@ -26,31 +26,35 @@
 
   <main id="main-content">
     <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">CHINA HOUSE PRICE INDEX</p>
-        <h1>看懂 70 座城市<br>房价正在怎么变</h1>
-        <p class="hero-summary">
-          国家统计局月度数据，一处浏览新房、二手房及不同面积住宅的同比、环比与定基/累计走势。
-          选择一座城市，从最新变化看到完整历史。
-        </p>
-        <div class="data-facts" aria-label="数据概览">
-          <span id="data-through">数据加载中</span>
-          <span id="city-coverage">70 个城市</span>
-          <span id="month-coverage">2006 年至今</span>
-        </div>
-      </div>
+      <p class="eyebrow">
+        CHINA 70-CITY HOUSE PRICE INDEX
+        <span class="eyebrow-sep" aria-hidden="true">/</span>
+        <span id="hero-month">—</span>
+      </p>
+      <h1>看懂 70 座城市<br>房价正在怎么变</h1>
+      <p class="hero-summary">
+        国家统计局月度数据，一处浏览新房、二手房及不同面积住宅的同比、环比与定基/累计走势。
+        选择一座城市，从最新变化看到完整历史。
+      </p>
 
-      <div class="hero-orbit" aria-hidden="true">
-        <div class="orbit-ring orbit-ring-outer"></div>
-        <div class="orbit-ring orbit-ring-inner"></div>
-        <div class="orbit-core">
-          <span>最新覆盖</span>
-          <strong id="hero-month">—</strong>
+      <dl class="dataset-facts" aria-label="数据集概览">
+        <div>
+          <dt>覆盖城市</dt>
+          <dd id="city-coverage">—</dd>
         </div>
-        <span class="orbit-label orbit-label-a">北京</span>
-        <span class="orbit-label orbit-label-b">成都</span>
-        <span class="orbit-label orbit-label-c">深圳</span>
-      </div>
+        <div>
+          <dt>时间跨度</dt>
+          <dd id="month-coverage">—</dd>
+        </div>
+        <div>
+          <dt>数据截至</dt>
+          <dd id="data-through">—</dd>
+        </div>
+        <div>
+          <dt>更新频率</dt>
+          <dd>每月一次</dd>
+        </div>
+      </dl>
     </section>
 
     <section class="control-panel" aria-label="数据筛选">
@@ -123,8 +127,8 @@
 
     <div id="dashboard" hidden>
       <section class="overview-grid" aria-labelledby="overview-title">
-        <article class="chart-card">
-          <div class="section-heading chart-heading">
+        <article class="panel chart-card">
+          <div class="panel-head chart-heading">
             <div>
               <p class="section-kicker">城市趋势</p>
               <h2 id="overview-title"><span id="chart-city">北京</span>房价指数</h2>
@@ -142,9 +146,13 @@
           <p id="chart-note" class="chart-note" hidden></p>
         </article>
 
-        <aside class="latest-card" aria-labelledby="latest-title">
-          <p class="section-kicker">最新读数</p>
-          <h2 id="latest-title">当前指数</h2>
+        <aside class="panel latest-card" aria-labelledby="latest-title">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">最新读数</p>
+              <h2 id="latest-title">当前指数</h2>
+            </div>
+          </div>
           <p id="latest-month" class="latest-month">—</p>
           <div class="latest-value-row">
             <strong id="latest-value">—</strong>
@@ -165,8 +173,8 @@
         </aside>
       </section>
 
-      <section class="snapshot-section" aria-labelledby="snapshot-title">
-        <div class="section-heading snapshot-heading">
+      <section class="panel snapshot-section" aria-labelledby="snapshot-title">
+        <div class="panel-head snapshot-heading">
           <div>
             <p class="section-kicker">最新月份 · 城市截面</p>
             <h2 id="snapshot-title"><span id="snapshot-city">北京</span>住宅指数全景</h2>
@@ -182,8 +190,8 @@
         <div id="snapshot-grid" class="snapshot-groups"></div>
       </section>
 
-      <section class="market-section" aria-labelledby="market-title">
-        <div class="section-heading">
+      <section class="panel market-section" aria-labelledby="market-title">
+        <div class="panel-head">
           <div>
             <p class="section-kicker">70 城横向观察</p>
             <h2 id="market-title">最新市场温度</h2>
@@ -191,27 +199,32 @@
           <p id="market-caption" class="section-caption">—</p>
         </div>
 
-        <div class="temperature-grid">
-          <article class="temperature-card rising">
-            <span>高于 100</span>
-            <strong id="rising-count">—</strong>
-            <p>较比较期上涨</p>
-          </article>
-          <article class="temperature-card flat">
-            <span>等于 100</span>
-            <strong id="flat-count">—</strong>
-            <p>与比较期持平</p>
-          </article>
-          <article class="temperature-card falling">
-            <span>低于 100</span>
-            <strong id="falling-count">—</strong>
-            <p>较比较期下降</p>
-          </article>
+        <div class="distribution" aria-hidden="true">
+          <div class="distribution-bar">
+            <span id="rising-bar" class="distribution-segment rising"></span>
+            <span id="flat-bar" class="distribution-segment flat"></span>
+            <span id="falling-bar" class="distribution-segment falling"></span>
+          </div>
         </div>
+
+        <dl class="distribution-legend">
+          <div class="legend-item rising">
+            <dt><span class="legend-swatch"></span>高于 100 · 上涨</dt>
+            <dd><strong id="rising-count">—</strong><span>城</span></dd>
+          </div>
+          <div class="legend-item flat">
+            <dt><span class="legend-swatch"></span>等于 100 · 持平</dt>
+            <dd><strong id="flat-count">—</strong><span>城</span></dd>
+          </div>
+          <div class="legend-item falling">
+            <dt><span class="legend-swatch"></span>低于 100 · 下降</dt>
+            <dd><strong id="falling-count">—</strong><span>城</span></dd>
+          </div>
+        </dl>
       </section>
 
-      <section class="ranking-section" aria-labelledby="ranking-title">
-        <div class="section-heading ranking-heading">
+      <section class="panel ranking-section" aria-labelledby="ranking-title">
+        <div class="panel-head ranking-heading">
           <div>
             <p class="section-kicker">全部城市</p>
             <h2 id="ranking-title">70 城最新指数</h2>
@@ -226,33 +239,38 @@
           <table>
             <thead>
               <tr>
-                <th scope="col">排名</th>
+                <th scope="col" class="col-rank">排名</th>
                 <th scope="col">城市</th>
-                <th scope="col">指数</th>
-                <th scope="col">变化</th>
-                <th scope="col">状态</th>
+                <th scope="col" class="col-num">指数</th>
+                <th scope="col" class="col-num">变化</th>
+                <th scope="col" class="col-state">状态</th>
               </tr>
             </thead>
             <tbody id="ranking-body"></tbody>
           </table>
         </div>
         <p id="ranking-empty" class="empty-state" hidden>没有找到匹配的城市。</p>
+        <p class="table-hint">按指数从高到低排列，滚动查看全部 70 城；点击任一行切换城市。</p>
       </section>
 
-      <section class="history-section" aria-labelledby="history-title">
-        <div class="section-heading">
+      <section class="panel history-section" aria-labelledby="history-title">
+        <div class="panel-head">
           <div>
             <p class="section-kicker">近期明细</p>
             <h2 id="history-title"><span id="history-city">北京</span>近 12 个月</h2>
           </div>
-          <a class="download-link" href="./70cityprice.csv" download>下载完整 CSV</a>
+          <a class="download-link" href="./70cityprice.csv" download>下载完整 CSV ↓</a>
         </div>
         <div class="history-grid" id="history-grid"></div>
       </section>
 
-      <section class="method-section" aria-labelledby="method-title">
-        <p class="section-kicker">如何阅读</p>
-        <h2 id="method-title">这里展示的是价格指数，不是均价</h2>
+      <section class="panel method-section" aria-labelledby="method-title">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">如何阅读</p>
+            <h2 id="method-title">这里展示的是价格指数，不是均价</h2>
+          </div>
+        </div>
         <div class="method-grid">
           <p><strong>同比</strong>以上年同月为 100，适合观察中长期变化。比如 98.5 表示较上年同月下降约 1.5%。</p>
           <p><strong>环比</strong>以上月为 100，更灵敏地反映近期变化。比如 100.3 表示较上月上涨约 0.3%。</p>
@@ -263,8 +281,9 @@
     </div>
 
     <nav class="city-index" aria-label="全部城市索引">
-      <h2>按城市查看</h2>
-      <p>每个城市都有一页静态汇总，含最新读数与近 12 个月明细。</p>
+      <p class="section-kicker">按城市查看</p>
+      <h2>70 个城市，每城一页静态汇总</h2>
+      <p class="city-index-intro">含最新读数与近 12 个月明细，可直接分享。</p>
       <ul>__CITY_LINKS__</ul>
     </nav>
   </main>

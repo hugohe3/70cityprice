@@ -1,17 +1,31 @@
-/* 静态城市页样式。与主站共用同一套设计变量，但不依赖 styles.css，
-   城市页是纯静态内容，不加载 app.js。 */
+/* 静态城市页样式。与主站共用同一套设计变量（金融数据终端风格），
+   但不依赖 styles.css——城市页是纯静态内容，不加载 app.js。 */
 
 :root {
   color-scheme: light;
-  --ink: #1d2623;
-  --muted: #66706b;
-  --paper: #f5f2ea;
-  --card: #fffef9;
-  --line: #d9d7cd;
-  --accent: #d94f31;
-  --teal: #1f6f68;
-  --shadow: 0 24px 70px rgba(40, 48, 43, 0.08);
-  --radius: 24px;
+
+  --paper: #f7f8f7;
+  --paper-sunken: #f1f3f2;
+  --card: #ffffff;
+  --ink: #12181c;
+  --muted: #5c6b70;
+  --faint: #8a969a;
+  --line: #e3e6e5;
+  --line-soft: #eef1f0;
+  --line-strong: #cfd6d5;
+
+  --accent: #0f6e63;
+  --accent-soft: #e6f0ee;
+  --up: #c0392b;
+  --down: #1f7a6b;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  --font-sans: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  --font-num: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
 }
 
 * {
@@ -20,16 +34,21 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 85% 4%, rgba(210, 114, 75, 0.13), transparent 24rem),
-    var(--paper);
+  background: var(--paper);
   color: var(--ink);
-  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 15px;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
   color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .site-header,
@@ -41,127 +60,151 @@ footer {
 
 .site-header {
   display: flex;
-  min-height: 84px;
+  min-height: 60px;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid var(--line);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.05rem;
-  font-weight: 750;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   text-decoration: none;
 }
 
 .brand-mark {
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 26px;
+  height: 26px;
   place-items: center;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   background: var(--ink);
-  color: var(--paper);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1rem;
+  color: #fff;
+  font-family: var(--font-num);
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .repository-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  border-bottom: 1px solid currentColor;
+  gap: 0.35rem;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   text-decoration: none;
 }
 
+.repository-link:hover {
+  color: var(--accent);
+}
+
 main {
-  padding-bottom: 4rem;
+  padding-bottom: 3.5rem;
 }
 
 .breadcrumb {
-  margin: 1.5rem 0 0;
+  margin: 1.75rem 0 0;
+  color: var(--faint);
+  font-family: var(--font-num);
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
+}
+
+.breadcrumb a {
   color: var(--muted);
-  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
 }
 
 .breadcrumb span[aria-hidden] {
   margin: 0 0.4rem;
+  color: var(--line-strong);
 }
 
 h1 {
-  margin: 0.75rem 0 0;
-  font-family: "Songti SC", SimSun, Georgia, serif;
-  font-size: clamp(2.1rem, 6vw, 3.2rem);
+  margin: 0.85rem 0 0;
+  font-size: clamp(1.85rem, 5vw, 2.5rem);
   font-weight: 600;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 h2 {
   margin: 3rem 0 1rem;
-  font-family: "Songti SC", SimSun, Georgia, serif;
-  font-size: clamp(1.35rem, 3.4vw, 1.75rem);
+  font-size: 1.15rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .lede {
-  margin: 1.1rem 0 0;
+  max-width: 62ch;
+  margin: 0.9rem 0 0;
   color: var(--muted);
-  font-size: 1.02rem;
+  font-size: 0.95rem;
 }
+
+/* ---------- 三张头条读数 ---------- */
 
 .headline-grid {
   display: grid;
-  margin-top: 2rem;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  margin-top: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  overflow: hidden;
 }
 
 .headline-card {
   display: flex;
   flex-direction: column;
-  padding: 1.35rem 1.5rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
   background: var(--card);
-  box-shadow: var(--shadow);
 }
 
 .headline-card span {
-  color: var(--muted);
-  font-size: 0.8rem;
+  color: var(--faint);
+  font-size: 0.75rem;
 }
 
 .headline-card strong {
-  margin-top: 0.4rem;
-  font-size: 2.4rem;
-  font-weight: 700;
-  line-height: 1.1;
+  margin-top: 0.45rem;
+  font-family: var(--font-num);
+  font-size: 2rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
 .headline-card em {
-  margin-top: 0.25rem;
+  margin-top: 0.4rem;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-style: normal;
 }
 
-.headline-card.tone-rising strong { color: var(--accent); }
-.headline-card.tone-falling strong { color: var(--teal); }
+.headline-card.tone-rising strong { color: var(--up); }
+.headline-card.tone-falling strong { color: var(--down); }
 
 .cta {
-  margin: 2rem 0 0;
+  margin: 1.5rem 0 0;
 }
 
 .cta-link {
   display: inline-block;
-  padding: 0.85rem 1.4rem;
-  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
   background: var(--ink);
-  color: var(--paper);
-  font-size: 0.95rem;
+  color: #fff;
+  font-size: 0.88rem;
   text-decoration: none;
 }
 
@@ -169,23 +212,46 @@ h2 {
   background: var(--accent);
 }
 
+/* ---------- 表格 ---------- */
+
+section > table,
+.metric-table,
+.history-table {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  overflow: hidden;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
 }
 
 th,
 td {
-  padding: 0.7rem 0.6rem;
-  border-bottom: 1px solid var(--line);
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--line-soft);
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
 thead th {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 600;
+  border-bottom-color: var(--line-strong);
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+tbody tr:last-child th,
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+thead th:first-child {
+  text-align: left;
 }
 
 tbody th[scope="row"] {
@@ -193,54 +259,77 @@ tbody th[scope="row"] {
   text-align: left;
 }
 
+tbody td {
+  font-family: var(--font-num);
+}
+
 .metric-table td strong {
   display: block;
-  font-size: 1.05rem;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .metric-table td span {
-  color: var(--muted);
-  font-size: 0.76rem;
+  color: var(--faint);
+  font-size: 0.74rem;
 }
 
-.metric-table td span.tone-rising { color: var(--accent); }
-.metric-table td span.tone-falling { color: var(--teal); }
+.metric-table td span.tone-rising { color: var(--up); }
+.metric-table td span.tone-falling { color: var(--down); }
 
 .note {
-  margin: 1rem 0 0;
-  color: var(--muted);
-  font-size: 0.82rem;
+  margin: 0.9rem 0 0;
+  color: var(--faint);
+  font-size: 0.78rem;
 }
+
+.note a {
+  color: var(--accent);
+}
+
+section p:not(.note):not(.lede):not(.cta) {
+  max-width: 70ch;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+section p strong {
+  color: var(--ink);
+}
+
+/* ---------- 其他城市 ---------- */
 
 .neighbour-list {
   display: flex;
   margin: 0;
   padding: 0;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.4rem;
   list-style: none;
 }
 
 .neighbour-list a {
   display: inline-block;
-  padding: 0.4rem 0.9rem;
+  padding: 0.28rem 0.7rem;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--card);
-  font-size: 0.88rem;
+  color: var(--muted);
+  font-size: 0.82rem;
   text-decoration: none;
 }
 
 .neighbour-list a:hover {
-  border-color: var(--ink);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 footer {
   display: flex;
-  padding: 2rem 0 3rem;
+  padding: 1.5rem 0 2.5rem;
   border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.82rem;
+  color: var(--faint);
+  font-size: 0.75rem;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -251,12 +340,12 @@ footer p {
 
 @media (max-width: 620px) {
   table {
-    font-size: 0.84rem;
+    font-size: 0.8rem;
   }
 
   th,
   td {
-    padding: 0.55rem 0.35rem;
+    padding: 0.5rem 0.5rem;
   }
 
   footer {
