@@ -3,7 +3,7 @@
 
 import math
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 
 REQUIRED_COLUMNS = [
@@ -83,6 +83,13 @@ CITY_NAME_ALIASES = {
     '大理市': '大理',
 }
 
+# matplotlib 中文字体候选，按优先级：macOS → Linux（fonts-noto-cjk / 文泉驿）→ Windows
+CJK_FONT_CANDIDATES = [
+    'PingFang SC', 'Heiti SC', 'Noto Sans CJK SC', 'Noto Sans CJK JP',
+    'Source Han Sans SC', 'WenQuanYi Zen Hei', 'SimHei', 'Microsoft YaHei',
+    'Arial Unicode MS',
+]
+
 CITY_STANDARD_NAME = {city: city for city in CITY_ADCODE}
 CITY_SUFFIXES = ('自治州', '地区', '盟', '市')
 
@@ -115,6 +122,24 @@ def format_index_value(value: object) -> str:
     except ValueError:
         return text
     return f'{number:g}'
+
+
+def find_cjk_fonts() -> List[str]:
+    """返回本机可用的中文字体名（按优先级），一个都没有时直接报错。
+
+    缺字体时 matplotlib 只会静默画出满屏豆腐块，所以宁可中止。
+    """
+    from matplotlib import font_manager
+
+    available = {font.name for font in font_manager.fontManager.ttflist}
+    usable = [name for name in CJK_FONT_CANDIDATES if name in available]
+    if not usable:
+        raise RuntimeError(
+            '未找到可用的中文字体，图中中文会渲染成豆腐块。'
+            '请安装中文字体（如 fonts-noto-cjk），或把本机已有的字体名加进 '
+            'common.py 的 CJK_FONT_CANDIDATES。'
+        )
+    return usable
 
 
 def normalize_city_name(name: object, strip_suffix: bool = True) -> str:

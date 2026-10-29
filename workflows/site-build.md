@@ -4,7 +4,7 @@
 
 ## 先确认你真的需要手工跑
 
-**正常的月度更新不需要执行本流程。** [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml) 在每次 push 到 main 后自动构建并部署。
+**正常的月度更新不需要执行本流程。** [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml) 在 push 到 main 且改动涉及 `70cityprice.csv`、`site/`、`scripts/` 或该 workflow 本身时自动构建并部署；只改文档不会触发。需要强制重部署时在 Actions 页面手动运行（`workflow_dispatch`）。
 
 只有这三种情况才手工跑：本地预览、调试构建脚本、排查线上页面异常。
 
@@ -41,7 +41,7 @@ URL 形如 `/city/shenzhen/`，slug 来自 `common.py` 的 `CITY_SLUG`。**这�
 
 ### 分享卡片
 
-`og/*.png` 由 matplotlib 绘制，1200×630。**缺少中文字体时脚本直接报错**而不是产出满屏豆腐块；确实没字体又想先出页面，加 `--skip-images`（此时 og:image 标签也会相应省略）。
+`og/*.png` 由 matplotlib 绘制，1200×630，字体候选清单与 README 走势图共用 `common.py` 的 `CJK_FONT_CANDIDATES`。**缺少中文字体时脚本直接报错**而不是产出满屏豆腐块；确实没字体又想先出页面，加 `--skip-images`（此时 og:image 标签也会相应省略）。
 
 ## 本地预览
 

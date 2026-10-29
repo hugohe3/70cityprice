@@ -13,8 +13,8 @@ from datetime import date
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from build_site_data import BASE_COLUMNS, MARKET_COLUMNS, read_source
-from common import CITY_ADCODE, CITY_SLUG, get_csv_path, get_repo_root
+from build_site_data import BASE_COLUMNS, MARKET_COLUMNS, latest_of, read_source
+from common import CITY_ADCODE, CITY_SLUG, find_cjk_fonts, get_csv_path, get_repo_root
 
 DEFAULT_ORIGIN = 'https://hugohe3.github.io/70cityprice'
 
@@ -80,16 +80,6 @@ def describe(value: Optional[float]) -> Tuple[str, str]:
 
 def series_of(values: Dict, dates: List[str], adcode: str, market: str, area: str, basis: str):
     return [values.get((adcode, market, area, basis, month)) for month in dates]
-
-
-def latest_of(points: List[Optional[float]]) -> Tuple[Optional[int], Optional[float], Optional[float]]:
-    """返回（最后有值的下标, 该值, 与上一个有值读数的差）。"""
-    index = next((i for i in range(len(points) - 1, -1, -1) if points[i] is not None), None)
-    if index is None:
-        return None, None, None
-    previous = next((i for i in range(index - 1, -1, -1) if points[i] is not None), None)
-    change = None if previous is None else points[index] - points[previous]
-    return index, points[index], change
 
 
 def build_metric_rows(values, dates, adcode) -> List[dict]:
@@ -373,19 +363,11 @@ def render_og_images(site_dir: Path, values, dates, cities: List[str], latest_mo
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    from matplotlib import font_manager
 
-    candidates = [
-        'PingFang SC', 'Heiti SC', 'Noto Sans CJK SC', 'Noto Sans CJK JP',
-        'Source Han Sans SC', 'WenQuanYi Zen Hei', 'SimHei', 'Arial Unicode MS',
-    ]
-    available = {font.name for font in font_manager.fontManager.ttflist}
-    usable = [name for name in candidates if name in available]
-    if not usable:
-        raise RuntimeError(
-            '未找到可用的中文字体，分享卡片会渲染成豆腐块。'
-            '请安装中文字体（如 fonts-noto-cjk）或加 --skip-images 跳过。'
-        )
+    try:
+        usable = find_cjk_fonts()
+    except RuntimeError as e:
+        raise RuntimeError(f'{e} 确实没有字体又想先出页面，加 --skip-images 跳过分享卡片。') from e
 
     plt.rcParams['font.sans-serif'] = usable
     plt.rcParams['axes.unicode_minus'] = False

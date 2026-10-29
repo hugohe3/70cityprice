@@ -141,25 +141,31 @@ def build_city_series(
     return city_series
 
 
-def summarize_latest(points: List[Optional[Number]]) -> Optional[List]:
-    """取最后一个有值的读数及其与前一个有值读数的差，返回 [值, 变化, 月份下标]。"""
-    latest_index = next(
+def latest_of(
+    points: List[Optional[Number]],
+) -> Tuple[Optional[int], Optional[Number], Optional[Number]]:
+    """返回（最后有值的下标, 该值, 与上一个有值读数的差）。"""
+    index = next(
         (i for i in range(len(points) - 1, -1, -1) if points[i] is not None),
         None,
     )
-    if latest_index is None:
-        return None
+    if index is None:
+        return None, None, None
 
-    previous_index = next(
-        (i for i in range(latest_index - 1, -1, -1) if points[i] is not None),
+    previous = next(
+        (i for i in range(index - 1, -1, -1) if points[i] is not None),
         None,
     )
-    change = (
-        None
-        if previous_index is None
-        else round(points[latest_index] - points[previous_index], 2)
-    )
-    return [points[latest_index], change, latest_index]
+    change = None if previous is None else points[index] - points[previous]
+    return index, points[index], change
+
+
+def summarize_latest(points: List[Optional[Number]]) -> Optional[List]:
+    """取最后一个有值的读数及其与前一个有值读数的差，返回 [值, 变化, 月份下标]。"""
+    index, value, change = latest_of(points)
+    if index is None:
+        return None
+    return [value, None if change is None else round(change, 2), index]
 
 
 def build_index(

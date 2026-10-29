@@ -23,12 +23,13 @@ python3 scripts/generate_chart.py
 | 指数类型 | `同比` |
 | 时间范围 | 2015-01 至今 |
 | 参考线 | 100（与上年同期持平） |
+| 纵轴 | 默认 85–170，数据超出时自动外扩 |
 
 用同比而非定基比是有意为之——定基比跨年份不可比，画成一条线会在基期轮换处出现假跳变。见 [`references/fixedbase-caliber.md`](../references/fixedbase-caliber.md)。
 
 ## 中文字体
 
-脚本按 `PingFang SC → Heiti SC → SimHei → Arial Unicode MS` 顺序回退。Linux 上若这些都没有，图里中文会变成方框——装一个中文字体（如 `fonts-noto-cjk`）或往这个列表里加本机已有的字体名，不要改成英文标签。
+字体候选清单是 `common.py` 的 `CJK_FONT_CANDIDATES`（与网页分享卡片共用），覆盖 macOS（PingFang SC）、Linux（Noto Sans CJK / 文泉驿）和 Windows（SimHei / 微软雅黑）。一个都找不到时脚本直接报错，不会画出满屏方框——装一个中文字体（如 `fonts-noto-cjk`）或往这个列表里加本机已有的字体名，不要改成英文标签。
 
 ## 画别的图
 

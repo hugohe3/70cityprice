@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """生成北上广深近10年房价走势图"""
 
+import math
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from common import get_csv_path, get_repo_root
+from common import find_cjk_fonts, get_csv_path, get_repo_root
 
-# 设置中文字体
-plt.rcParams['font.sans-serif'] = ['PingFang SC', 'Heiti SC', 'SimHei', 'Arial Unicode MS']
-plt.rcParams['axes.unicode_minus'] = False
+# 纵轴默认范围，保持历年配图观感一致；数据超出时再向外扩
+DEFAULT_YLIM = (85, 170)
 
 def main():
+    # 设置中文字体（找不到就报错，而不是画出豆腐块）
+    plt.rcParams['font.sans-serif'] = find_cjk_fonts()
+    plt.rcParams['axes.unicode_minus'] = False
+
     # 读取数据
     df = pd.read_csv(get_csv_path())
     
@@ -56,7 +61,9 @@ def main():
     ax.set_ylabel('价格指数（上年同期=100）', fontsize=11)
     ax.legend(loc='upper right', framealpha=0.9)
     ax.grid(True, alpha=0.3)
-    ax.set_ylim(85, 170)
+    low = min(DEFAULT_YLIM[0], math.floor(data['CommodityHouseIDX'].min()) - 2)
+    high = max(DEFAULT_YLIM[1], math.ceil(data['CommodityHouseIDX'].max()) + 2)
+    ax.set_ylim(low, high)
     
     # 添加数据来源
     ax.text(0.02, 0.02, '数据来源：国家统计局', transform=ax.transAxes, 

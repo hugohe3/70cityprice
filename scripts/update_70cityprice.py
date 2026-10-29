@@ -14,6 +14,10 @@
 import argparse
 import re
 import sys
+import urllib.request
+from collections import Counter
+from io import StringIO
+
 import pandas as pd
 
 from common import (
@@ -49,19 +53,20 @@ def parse_date_from_url(url):
     
     return None, None
 
-def parse_date_from_title(tables):
-    """从表格标题中解析日期（标题写的就是数据月份，如「2025年6月份…」）"""
-    for table in tables:
-        if table.empty:
-            continue
-        first_row = table.iloc[0].astype(str)
-        for cell in first_row:
-            match = re.search(r'(\d{4})年(\d{1,2})月', str(cell))
-            if match:
-                return int(match.group(1)), int(match.group(2))
-    return None, None
+def parse_date_from_title(html_text):
+    """
+    从页面标题中解析日期（标题写的就是数据月份，如「2025年6月份70个大中城市…」）
 
-def resolve_data_month(url, tables):
+    标题不在 <table> 里，所以直接在整页 HTML 里找；页面可能附带其他月份的相关链接，
+    取出现次数最多的那个。
+    """
+    matches = re.findall(r'(\d{4})年(\d{1,2})月份?\s*70个大中城市', html_text)
+    if not matches:
+        return None, None
+    year, month = Counter(matches).most_common(1)[0][0]
+    return int(year), int(month)
+
+def resolve_data_month(url, html_text):
     """
     确定数据月份，返回 (year, month)，解析失败返回 (None, None)
 
@@ -76,7 +81,7 @@ def resolve_data_month(url, tables):
             year -= 1
         return year, month
 
-    return parse_date_from_title(tables)
+    return parse_date_from_title(html_text)
 
 def extract_cities_from_table(table, start_row, end_row, city_col=0):
     """从表格中提取城市列表"""
@@ -89,12 +94,29 @@ def extract_cities_from_table(table, start_row, end_row, city_col=0):
                 cities.append(normalized)
     return cities
 
+FETCH_TIMEOUT_SECONDS = 30
+FETCH_HEADERS = {
+    # 带上常见浏览器 UA，避免被当作脚本请求拒绝
+    'User-Agent': (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+    ),
+}
+
 def fetch_data_from_url(url):
-    """从URL抓取数据"""
+    """从URL抓取页面，返回 (表格列表, 页面HTML)"""
     print(f"正在从以下链接抓取数据: {url}")
-    tables = pd.read_html(url)
+    request = urllib.request.Request(url, headers=FETCH_HEADERS)
+    try:
+        with urllib.request.urlopen(request, timeout=FETCH_TIMEOUT_SECONDS) as response:
+            charset = response.headers.get_content_charset() or 'utf-8'
+            html_text = response.read().decode(charset, errors='replace')
+    except OSError as e:
+        raise RuntimeError(f"抓取页面失败: {e}") from e
+
+    tables = pd.read_html(StringIO(html_text))
     print(f"成功读取 {len(tables)} 个表格")
-    return tables
+    return tables, html_text
 
 def parse_main_index_table(table, start_row=2, end_row=37, is_january=False):
     """
@@ -451,10 +473,10 @@ def main():
     
     try:
         # 抓取数据
-        tables = fetch_data_from_url(url)
+        tables, html_text = fetch_data_from_url(url)
         
         # 解析数据月份
-        data_year, data_month = resolve_data_month(url, tables)
+        data_year, data_month = resolve_data_month(url, html_text)
         if not data_year:
             print("错误: 无法从URL或表格中解析日期")
             print("请检查URL格式是否正确")

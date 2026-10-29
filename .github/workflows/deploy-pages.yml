@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+    # 只改文档（README、workflows/ 等）时不必重新部署
+    paths:
+      - 70cityprice.csv
+      - site/**
+      - scripts/**
+      - .github/workflows/deploy-pages.yml
   workflow_dispatch:
 
 permissions:
