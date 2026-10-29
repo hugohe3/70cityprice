@@ -110,7 +110,7 @@ def load_data(csv_path=None):
 
 def save_data(df, output_path):
     """保存数据到CSV"""
-    df.to_csv(output_path, index=False, quoting=1)
+    df.to_csv(output_path, index=False, quoting=1, encoding='utf-8-sig')
     print(f"\n✅ 数据已保存到: {output_path}")
 
 

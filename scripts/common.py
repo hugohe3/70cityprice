@@ -23,6 +23,10 @@ NUMERIC_COLUMNS = [
     'SecondHand144IDX', 'SecondHandAbove144IDX'
 ]
 
+# 指数数值的合理区间（全表历史实测约 70.8–192.5）。超出区间几乎一定是解析时
+# 列错位，把序号、年份之类的内容写进了数值列。
+INDEX_VALUE_RANGE = (50.0, 250.0)
+
 # 70个城市的ADCODE映射
 CITY_ADCODE = {
     '北京': '110100', '天津': '120100', '石家庄': '130100', '太原': '140100',
@@ -91,6 +95,26 @@ def get_repo_root() -> Path:
 def get_csv_path() -> Path:
     """获取主CSV文件路径。"""
     return get_repo_root() / '70cityprice.csv'
+
+
+def format_index_value(value: object) -> str:
+    """把指数值格式化为 CSV 存储写法：去掉多余的 `.0`，空值写成空串。
+
+    历史数据一律写成 `97`、`103.2`；`pd.read_html` 读出的是浮点数，
+    直接写回会变成 `97.0`。无法解析的内容原样返回，交给校验脚本报错。
+    """
+    if value is None:
+        return ''
+    if isinstance(value, float) and math.isnan(value):
+        return ''
+    text = str(value).strip()
+    if not text or text.lower() == 'nan':
+        return ''
+    try:
+        number = float(text)
+    except ValueError:
+        return text
+    return f'{number:g}'
 
 
 def normalize_city_name(name: object, strip_suffix: bool = True) -> str:

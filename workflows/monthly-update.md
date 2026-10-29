@@ -14,9 +14,19 @@
 
 ### 1. 抓取并追加
 
+可以先用 `--dry-run` 只抓取、解析和检查，不写文件：
+
+```bash
+python3 scripts/update_70cityprice.py "<发布页URL>" --dry-run
+```
+
+确认无误后正式写入：
+
 ```bash
 python3 scripts/update_70cityprice.py "<发布页URL>"
 ```
+
+写入前脚本会检查新记录：是否恰好覆盖 70 城、每城同比和环比是否齐备、数值是否在合理区间、月份是否紧接现有最新月份（或替换已有月份）。任何一项不通过就列出问题并退出，**主 CSV 不会被改动**。
 
 脚本原地修改 [`70cityprice.csv`](../70cityprice.csv)。同月份已存在会被**替换**而非重复追加，所以重跑是安全的。
 
@@ -28,7 +38,7 @@ python3 scripts/update_70cityprice.py "<发布页URL>"
 python3 scripts/validate_70cityprice.py
 ```
 
-检查结构、主键唯一性、月份连续性、70 城覆盖。本仓库没有测试套件和 CI 检查，这一步就是唯一的回归测试。
+检查结构（列齐备）、主键唯一性、月份连续性、70 城覆盖、ADCODE 与城市一致、数值区间与写法、排序与写回格式。本仓库没有测试套件，这一步就是唯一的回归测试。Pages 部署前 CI 也会跑一遍，但不要指望它兜底——提交前本地必须先通过。
 
 **校验不通过就停止**，按 [`references/stats-table-parsing.md`](../references/stats-table-parsing.md) 的「排查抓取失败」排查，不要带着告警继续后续步骤。
 

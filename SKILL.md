@@ -18,7 +18,7 @@ metadata:
 2. 从下表选中**恰好一条**流程，读它的流程文档。
 3. 只在流程文档显式要求时才读对应的 `references/`。
 
-| 意图 | 流程authority |
+| 意图 | 流程 |
 |---|---|
 | 抓取并追加新月份数据 | [`workflows/monthly-update.md`](workflows/monthly-update.md) |
 | 按城市/月份/组合条件取子集 | [`workflows/extract.md`](workflows/extract.md) |
@@ -31,13 +31,13 @@ metadata:
 
 ## 数据心智模型
 
-只有一个事实源：仓库根的 [`70cityprice.csv`](70cityprice.csv)，2006 年至今的月度数据，约 4.7 万行。不引入数据库，所有工具都是围绕这份 CSV 的读写。
+只有一个事实源：仓库根的 [`70cityprice.csv`](70cityprice.csv)，2006 年至今的月度数据，约 4.8 万行，每月新增 210 行（70 城 × 3）。不引入数据库，所有工具都是围绕这份 CSV 的读写。
 
 四条必须先内化的约束：
 
-1. **一个「日期 × 城市」= 3 行**，`FixedBase` ∈ {`同比`, `环比`, `定基比`}。`Below90 / 144 / Above144` 这类带后缀的列是同一行内的分户型细分，**不要**再展开成额外行。
+1. **一个「日期 × 城市」= 3 行**（2011 年起；2006–2010 年还没有定基比，只有 2 行），`FixedBase` ∈ {`同比`, `环比`, `定基比`}。`Below90 / 144 / Above144` 这类带后缀的列是同一行内的分户型细分，**不要**再展开成额外行。
 
-2. **写回格式不可改**：`utf-8-sig` 编码 + `csv.QUOTE_ALL` 全字段加引号（`update_csv()` 里的 `to_csv(..., quoting=1, encoding='utf-8-sig')`）。改动它会造成大规模无意义 diff 或 BOM 错乱。排序键固定为 `(CITY, DATE, FixedBase)`，日期格式固定 `YYYY/M/D`（无前导零，恒为该月 1 日）。
+2. **写回格式不可改**：`utf-8-sig` 编码 + `csv.QUOTE_ALL` 全字段加引号（`update_csv()` 里的 `to_csv(..., quoting=1, encoding='utf-8-sig')`）。改动它会造成大规模无意义 diff 或 BOM 错乱。排序键固定为 `(CITY, DATE, FixedBase)`，日期格式固定 `YYYY/M/D`（无前导零，恒为该月 1 日），数值写法去掉多余的 `.0`（`97` 而非 `97.0`，由 `format_index_value()` 统一）。
 
 3. **城市名必须走标准化链路**：任何外部输入（抓来的城市名、`--cities` 参数）都要经 `normalize_city_name` → `get_standard_city_name` 才能落库或比对。禁止直接字符串比较。细节见 [`references/city-naming.md`](references/city-naming.md)。
 
@@ -46,7 +46,7 @@ metadata:
 ## 全局执行纪律
 
 - **命令一律用 `python3` / `pip3`**，不要在文档、docstring 或 print 里写裸 `python`。本机已在 `.venv/` 装好依赖，直接用系统解释器时命令写成 `.venv/bin/python3 scripts/...`。
-- **改完数据必跑校验**。`scripts/validate_70cityprice.py` 是本仓库事实上的回归测试（没有测试套件、lint 和 CI 检查）。
+- **改完数据必跑校验**。`scripts/validate_70cityprice.py` 是本仓库事实上的回归测试（没有测试套件和 lint；Pages 部署前 CI 也会跑它，不通过不上线）。
 - **`projects/` 是输出沙箱**，已被 `.gitignore` 忽略，脚本默认输出到这里。不要把生成的子集提交进仓库。
 - **`scripts/` 是扁平脚本目录，不是 Python 包**。各脚本直接 `from common import ...`，依赖同目录运行。新加工具脚本时维持这种扁平结构，共用逻辑放进 `common.py`。
 - **不要为本仓库引入通用工程脚手架**（`tests/`、分支流程、打包配置）。它是数据集包，不是应用。

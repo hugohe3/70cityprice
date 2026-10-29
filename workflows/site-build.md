@@ -55,14 +55,15 @@ python3 -m http.server 8000 --directory _site
 
 `deploy-pages.yml` 的构建步骤：
 
-1. 装 `fonts-noto-cjk` 与 `matplotlib` —— 分享卡片需要
-2. `cp -R site/. _site/` + `cp 70cityprice.csv _site/70cityprice.csv` —— 主 CSV 直接对外提供下载
-3. `build_site_data.py --output-dir _site/data` —— 生成分片数据
-4. `build_site_pages.py --output-dir _site --origin https://hugohe3.github.io/70cityprice --build-version <sha12>` —— 生成城市页、卡片、sitemap，并注入主页
-5. 用 `${GITHUB_SHA::12}` 替换 `_site/index.html` 里的 `__BUILD_VERSION__` —— 资源版本号，防止浏览器缓存到旧的 JS/CSS
-6. `touch _site/.nojekyll`
+1. 装 `fonts-noto-cjk`、`matplotlib`（分享卡片需要）和 `pandas`（校验需要）
+2. `validate_70cityprice.py` —— 主 CSV 校验不通过就中止，不部署
+3. `cp -R site/. _site/` + `cp 70cityprice.csv _site/70cityprice.csv` —— 主 CSV 直接对外提供下载
+4. `build_site_data.py --output-dir _site/data` —— 生成分片数据
+5. `build_site_pages.py --output-dir _site --origin https://hugohe3.github.io/70cityprice --build-version <sha12>` —— 生成城市页、卡片、sitemap，并注入主页
+6. 用 `${GITHUB_SHA::12}` 替换 `_site/index.html` 里的 `__BUILD_VERSION__` —— 资源版本号，防止浏览器缓存到旧的 JS/CSS
+7. `touch _site/.nojekyll`
 
-第 5 步是为了避免「HTML 更新了但 JS 还是缓存的旧版」这类错配。改 `site/index.html` 时**不要删掉 `__BUILD_VERSION__`、`__CITY_LINKS__`、`<!--__OG_TAGS__-->` 三个占位符**，也不要在本地把它们替换成固定值。
+第 6 步是为了避免「HTML 更新了但 JS 还是缓存的旧版」这类错配。改 `site/index.html` 时**不要删掉 `__BUILD_VERSION__`、`__CITY_LINKS__`、`<!--__OG_TAGS__-->` 三个占位符**，也不要在本地把它们替换成固定值。
 
 `--origin` 必须与实际部署地址一致，它决定 canonical、og:url 和 sitemap 里的绝对地址。换域名时改这里。
 
@@ -75,7 +76,7 @@ python3 -m http.server 8000 --directory _site
 ## 排查线上异常
 
 1. 先本地跑一遍两个构建脚本，看是不是数据本身的问题
-2. 跑 `python3 scripts/validate_70cityprice.py` 排除主 CSV 回归
+2. 跑 `python3 scripts/validate_70cityprice.py` 排除主 CSV 回归（CI 里这一步失败时，Actions 日志会直接显示校验报告）
 3. 都正常就看 Actions 日志，通常是构建步骤的路径或权限问题
 4. 城市页少了几页 → 检查 `CITY_SLUG` 是否与 `CITY_ADCODE` 完全对齐（新增城市时两处都要加）
 5. 分享卡片是豆腐块 → CI 的字体安装步骤失败了，脚本本应拦住这种情况，检查报错为何被吞掉

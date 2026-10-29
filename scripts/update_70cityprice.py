@@ -4,18 +4,25 @@
 用于将国家统计局发布的70城房价数据追加到现有CSV数据表中
 
 使用方法:
-    python3 update_70cityprice.py <URL>
+    python3 update_70cityprice.py <URL> [--dry-run]
 
 例如:
     python3 update_70cityprice.py "https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html"
+    python3 update_70cityprice.py "https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html" --dry-run
 """
 
+import argparse
 import re
 import sys
 import pandas as pd
 
 from common import (
+    CITY_ADCODE,
+    INDEX_VALUE_RANGE,
+    NUMERIC_COLUMNS,
     REQUIRED_COLUMNS,
+    REQUIRED_FIXED_BASES,
+    format_index_value,
     get_city_adcode,
     get_csv_path,
     get_standard_city_name,
@@ -24,7 +31,7 @@ from common import (
 )
 
 def parse_date_from_url(url):
-    """从URL中解析日期"""
+    """从URL中解析发布日期（注意：是发布月份，不是数据月份）"""
     # 尝试从URL中提取日期 (格式: t20250715 或 202507)
     match = re.search(r't(\d{8})', url)
     if match:
@@ -43,7 +50,7 @@ def parse_date_from_url(url):
     return None, None
 
 def parse_date_from_title(tables):
-    """从表格标题中解析日期"""
+    """从表格标题中解析日期（标题写的就是数据月份，如「2025年6月份…」）"""
     for table in tables:
         if table.empty:
             continue
@@ -53,6 +60,23 @@ def parse_date_from_title(tables):
             if match:
                 return int(match.group(1)), int(match.group(2))
     return None, None
+
+def resolve_data_month(url, tables):
+    """
+    确定数据月份，返回 (year, month)，解析失败返回 (None, None)
+
+    URL 里的日期是发布月份，数据月份要减 1（202507 发布的是 2025 年 6 月数据）；
+    表格标题里的日期本身就是数据月份，不能再减。
+    """
+    year, month = parse_date_from_url(url)
+    if year:
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+        return year, month
+
+    return parse_date_from_title(tables)
 
 def extract_cities_from_table(table, start_row, end_row, city_col=0):
     """从表格中提取城市列表"""
@@ -240,6 +264,7 @@ def process_tables(tables, is_january=False):
 def create_records(date_str, commodity_main, secondhand_main, commodity_size, secondhand_size):
     """创建CSV记录"""
     records = []
+    unmatched_cities = []
     
     # 获取所有城市
     all_cities = set(commodity_main.keys()) | set(secondhand_main.keys()) | \
@@ -248,6 +273,7 @@ def create_records(date_str, commodity_main, secondhand_main, commodity_size, se
     for city in all_cities:
         adcode = get_city_adcode(city)
         if not adcode:
+            unmatched_cities.append(city)
             continue
         
         city_name = get_standard_city_name(city, warn_if_missing=False) or city
@@ -308,15 +334,71 @@ def create_records(date_str, commodity_main, secondhand_main, commodity_size, se
             ])
             
             if has_data:
+                for column in NUMERIC_COLUMNS:
+                    record[column] = format_index_value(record[column])
                 records.append(record)
     
-    return records
+    return records, sorted(unmatched_cities)
 
-def update_csv(csv_path, new_records):
-    """更新CSV文件"""
-    # 读取现有CSV
+def check_new_records(records, unmatched_cities, existing_df):
+    """
+    写入前检查新记录，返回问题列表（空列表表示可以写入）
+
+    抓取或解析出错时直接拒绝写入，而不是先写坏主 CSV 再靠校验脚本发现。
+    """
+    problems = []
+    if not records:
+        return ["未生成任何新记录，请检查页面表格结构或URL是否匹配70城房价发布页"]
+
+    if unmatched_cities:
+        problems.append(f"以下城市名无法匹配70城清单: {', '.join(unmatched_cities)}")
+
+    new_df = pd.DataFrame(records)
+
+    dates = sorted(new_df['DATE'].unique())
+    if len(dates) != 1:
+        problems.append(f"新记录应只含一个月份，实际为: {', '.join(dates)}")
+
+    cities = set(new_df['CITY'])
+    missing_cities = sorted(set(CITY_ADCODE) - cities)
+    if missing_cities:
+        problems.append(f"新记录只覆盖 {len(cities)} 个城市，缺少: {', '.join(missing_cities)}")
+
+    base_sets = new_df.groupby('CITY')['FixedBase'].agg(set)
+    lacking = sorted(city for city, bases in base_sets.items() if not REQUIRED_FIXED_BASES.issubset(bases))
+    if lacking:
+        problems.append(f"以下城市缺少同比或环比: {', '.join(lacking)}")
+
+    low, high = INDEX_VALUE_RANGE
+    for column in NUMERIC_COLUMNS:
+        values = new_df[column].fillna('').astype(str).str.strip()
+        values = values[values != '']
+        if values.empty:
+            continue
+        parsed = pd.to_numeric(values, errors='coerce')
+        bad = values[parsed.isna() | (parsed < low) | (parsed > high)]
+        if not bad.empty:
+            samples = ', '.join(sorted(bad.unique())[:8])
+            problems.append(f"列{column}有{len(bad)}个值非数值或超出{low:g}–{high:g}: {samples}")
+
+    # 新月份只能是已有月份（替换）或紧接最新月份的下一个月，避免写出断档
+    if len(dates) == 1:
+        existing_months = pd.to_datetime(existing_df['DATE'], format='%Y/%m/%d', errors='coerce').dt.to_period('M')
+        new_month = pd.Period(pd.to_datetime(dates[0], format='%Y/%m/%d'), freq='M')
+        latest_month = existing_months.max()
+        if new_month not in set(existing_months.dropna()) and new_month != latest_month + 1:
+            problems.append(f"新月份 {new_month} 与现有最新月份 {latest_month} 不连续")
+
+    return problems
+
+def load_existing(csv_path):
+    """读取现有CSV"""
     existing_df = pd.read_csv(csv_path, dtype=str, encoding='utf-8-sig')
     existing_df['CITY'] = existing_df['CITY'].apply(standardize_city_column)
+    return existing_df
+
+def update_csv(csv_path, existing_df, new_records):
+    """更新CSV文件"""
     print(f"现有数据: {len(existing_df)} 条记录")
     
     # 创建新数据DataFrame
@@ -351,12 +433,15 @@ def update_csv(csv_path, new_records):
     print(f"新增 {len(new_records)} 条记录")
 
 def main():
-    if len(sys.argv) < 2:
-        print("使用方法: python3 update_70cityprice.py <URL>")
-        print("例如: python3 update_70cityprice.py 'https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html'")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description='从国家统计局发布页抓取70城房价数据并追加到主CSV',
+        epilog="例如: python3 update_70cityprice.py 'https://www.stats.gov.cn/sj/zxfb/202601/t20260119_1962319.html'",
+    )
+    parser.add_argument('url', help='国家统计局70城房价发布页URL')
+    parser.add_argument('--dry-run', action='store_true', help='只抓取、解析并检查，不写入CSV')
+    args = parser.parse_args()
     
-    url = sys.argv[1]
+    url = args.url
     
     csv_path = get_csv_path()
     
@@ -368,23 +453,12 @@ def main():
         # 抓取数据
         tables = fetch_data_from_url(url)
         
-        # 解析日期
-        year, month = parse_date_from_url(url)
-        if not year:
-            year, month = parse_date_from_title(tables)
-        
-        if not year:
+        # 解析数据月份
+        data_year, data_month = resolve_data_month(url, tables)
+        if not data_year:
             print("错误: 无法从URL或表格中解析日期")
             print("请检查URL格式是否正确")
             sys.exit(1)
-        
-        # 数据日期通常是URL发布月份的上一个月
-        # 例如: 202507发布的是2025年6月的数据
-        data_month = month - 1
-        data_year = year
-        if data_month == 0:
-            data_month = 12
-            data_year -= 1
         
         date_str = f"{data_year}/{data_month}/1"
         print(f"数据日期: {date_str}")
@@ -401,15 +475,26 @@ def main():
         print(f"解析到 {len(secondhand_main)} 个城市的二手住宅数据")
         
         # 创建记录
-        records = create_records(date_str, commodity_main, secondhand_main, 
-                                 commodity_size, secondhand_size)
+        records, unmatched_cities = create_records(date_str, commodity_main, secondhand_main,
+                                                   commodity_size, secondhand_size)
         
         print(f"生成 {len(records)} 条新记录")
-        if not records:
-            raise ValueError("未生成任何新记录，请检查页面表格结构或URL是否匹配70城房价发布页")
+
+        # 写入前检查，不通过就不动主CSV
+        existing_df = load_existing(csv_path)
+        problems = check_new_records(records, unmatched_cities, existing_df)
+        if problems:
+            print("\n❌ 新记录未通过写入前检查，主CSV未改动:")
+            for idx, text in enumerate(problems, start=1):
+                print(f"{idx}. {text}")
+            sys.exit(1)
+
+        if args.dry_run:
+            print("\n✅ 写入前检查通过（--dry-run，未写入CSV）")
+            return
         
         # 更新CSV
-        update_csv(csv_path, records)
+        update_csv(csv_path, existing_df, records)
         
         print("\n✅ 数据更新完成!")
         

@@ -32,7 +32,7 @@
 
 - **命令一律 `python3` / `pip3`**，不要在文档、docstring 或 print 信息里写裸 `python`。Windows 用户自备 `python3` 别名。
 - **本机（Ubuntu 24.04）已在 `.venv/` 装好依赖**，未做系统软链接。直接用系统解释器时命令写成 `.venv/bin/python3 scripts/...`。
-- **改完 CSV 必跑 `python3 scripts/validate_70cityprice.py`。** 仓库没有测试套件、lint 配置和 CI 检查，这个脚本是事实上的质量回归测试。
+- **改完 CSV 必跑 `python3 scripts/validate_70cityprice.py`。** 仓库没有测试套件和 lint 配置，这个脚本是事实上的质量回归测试；Pages 部署流程也会先跑它，不通过就不部署。
 - **涉及 `定基比` 字段的任何回答，先读 [`references/fixedbase-caliber.md`](references/fixedbase-caliber.md)。** 该字段基期轮换过三次、2023 年起停发，跨期拼接是本数据集最容易出的实质性错误。
 - **不要为本仓库引入通用工程脚手架**（`tests/`、分支流程、打包配置）。它是数据集包，不是应用。
 - **`projects/` 是输出沙箱**，已被 `.gitignore` 忽略，脚本默认输出到这里。

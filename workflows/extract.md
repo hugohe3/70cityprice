@@ -64,6 +64,8 @@ python3 scripts/extract_70cityprice.py list-dates
 | `--output my.csv` | `projects/my.csv` |
 | `--output data/my.csv` | 指定路径 |
 
+输出与主 CSV 同样是 `utf-8-sig`（带 BOM）+ 全字段引号，Excel 直接双击打开中文不乱码。
+
 默认文件名：`month` → `70cityprice_<起始>_<结束>.csv`，`city` → `70cityprice_<城市名>.csv`，`filter` → `70cityprice_filtered.csv`。
 
 `projects/` 已在 `.gitignore` 中，生成的子集不会进仓库——也**不要**手工把它们加进去。

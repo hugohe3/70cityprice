@@ -19,9 +19,11 @@ import pandas as pd
 from common import (
     ALLOWED_FIXED_BASES,
     CITY_ADCODE,
+    INDEX_VALUE_RANGE,
     NUMERIC_COLUMNS,
     REQUIRED_COLUMNS,
     REQUIRED_FIXED_BASES,
+    format_index_value,
     get_csv_path,
     standardize_city_column,
 )
@@ -113,6 +115,22 @@ def validate_csv(csv_path: Union[Path, str], max_details: int = 8) -> int:
     if len(city_set) != EXPECTED_CITY_COUNT:
         issues.append(f"标准化后城市数异常: 实际{len(city_set)}，期望{EXPECTED_CITY_COUNT}")
 
+    # 4b) ADCODE 与城市一致（网页构建依赖这一点，别等到 CI 部署失败才发现）
+    expected_adcode = city_std.map(CITY_ADCODE)
+    adcode_raw = df['ADCODE'].fillna('').astype(str).str.strip()
+    adcode_mismatch = expected_adcode.notna() & (adcode_raw != expected_adcode)
+    if adcode_mismatch.any():
+        pairs = (
+            pd.DataFrame({'city': city_std, 'adcode': adcode_raw})
+            .loc[adcode_mismatch]
+            .drop_duplicates()
+        )
+        pair_strings = [f"{r.city}:{r.adcode}(应为{CITY_ADCODE[r.city]})" for r in pairs.itertuples(index=False)]
+        issues.append(
+            f"检测到{int(adcode_mismatch.sum())}条ADCODE与城市不一致: "
+            f"{limit_join(pair_strings, max_details)}"
+        )
+
     # 5) 主键唯一性校验（使用标准化城市名）
     key_df = pd.DataFrame({
         'DATE': df['DATE'].astype(str),
@@ -160,7 +178,8 @@ def validate_csv(csv_path: Union[Path, str], max_details: int = 8) -> int:
         mixed_text = [f'{idx}:{val:.2%}' for idx, val in mixed_months.items()]
         issues.append(f"定基比发布不一致（同月仅部分城市存在）: {limit_join(mixed_text, max_details)}")
 
-    # 9) 数值列格式校验
+    # 9) 数值列格式校验：可解析、在合理区间内、写法规范（97 而非 97.0）
+    low, high = INDEX_VALUE_RANGE
     for column in NUMERIC_COLUMNS:
         mask = non_empty_mask(df[column])
         if not mask.any():
@@ -175,7 +194,60 @@ def validate_csv(csv_path: Union[Path, str], max_details: int = 8) -> int:
                 f"{limit_join(bad_values, max_details)}"
             )
 
+        out_of_range = parsed.notna() & ((parsed < low) | (parsed > high))
+        if out_of_range.any():
+            bad_values = sorted(df.loc[out_of_range[out_of_range].index, column].astype(str).unique().tolist())
+            issues.append(
+                f"列{column}存在{int(out_of_range.sum())}个超出{low:g}–{high:g}的值（疑似解析列错位）: "
+                f"{limit_join(bad_values, max_details)}"
+            )
+
+        raw_values = df.loc[mask, column].astype(str)
+        unformatted = raw_values[parsed.notna() & (raw_values != raw_values.map(format_index_value))]
+        if not unformatted.empty:
+            bad_values = sorted(unformatted.unique().tolist())
+            issues.append(
+                f"列{column}存在{len(unformatted)}个写法不规范的数值（应去掉多余的.0等）: "
+                f"{limit_join(bad_values, max_details)}"
+            )
+
+    # 10) 排序：(CITY, DATE, FixedBase)
+    sorted_index = (
+        df.assign(_DATE_SORT=date_parsed)
+        .sort_values(['CITY', '_DATE_SORT', 'FixedBase'], kind='stable')
+        .index
+    )
+    if not (sorted_index == df.index).all():
+        first_bad = int(next(i for i, (a, b) in enumerate(zip(sorted_index, df.index)) if a != b))
+        issues.append(f"记录未按(CITY, DATE, FixedBase)排序，首个错位在第{first_bad + 2}行")
+
+    # 11) 写回格式：utf-8-sig + QUOTE_ALL，与 update_csv() 的输出逐字节一致
+    issues.extend(check_write_format(csv_path))
+
     return print_report(issues, warnings)
+
+
+def check_write_format(csv_path: Path) -> List[str]:
+    """检查文件能否被 update_csv() 的写法原样复现，防止格式漂移造成全文件 diff。"""
+    raw = csv_path.read_bytes()
+    if not raw.startswith(b'\xef\xbb\xbf'):
+        return ['文件缺少 UTF-8 BOM（写回必须用 encoding=\'utf-8-sig\'）']
+
+    text = raw.decode('utf-8-sig').replace('\r\n', '\n')
+    df = pd.read_csv(csv_path, dtype=str, encoding='utf-8-sig', keep_default_na=False)
+    expected = df.to_csv(index=False, quoting=1, lineterminator='\n')
+    if text == expected:
+        return []
+
+    for line_no, (actual_line, expected_line) in enumerate(
+        zip(text.split('\n'), expected.split('\n')), start=1
+    ):
+        if actual_line != expected_line:
+            return [
+                f"写回格式与约定(QUOTE_ALL)不一致，首个差异在第{line_no}行: "
+                f"{actual_line[:80]!r}，应为 {expected_line[:80]!r}"
+            ]
+    return ['写回格式与约定不一致：文件末尾行数或换行不同']
 
 
 def print_report(issues: List[str], warnings: List[str]) -> int:
